@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemelo Digital: Sistema de Riego</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .dashboard { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 1.5rem; }
+        
+        /* Controles */
+        .control-group { margin-bottom: 25px; background: #e9ecef; padding: 15px; border-radius: 10px; }
+        label { display: block; margin-bottom: 10px; font-weight: bold; color: #555; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .value-display { text-align: right; font-weight: bold; color: #007bff; }
+
+        /* Visualizadores */
+        .gauge-container { margin-bottom: 20px; }
+        .bar-bg { background: #ddd; height: 20px; border-radius: 10px; overflow: hidden; position: relative; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.1s linear, background-color 0.5s; }
+        
+        .rpm-bar { background-color: #28a745; }
+        .temp-bar { background-color: #ffc107; }
+        .cool-bar { background-color: #17a2b8; }
+
+        .status-text { display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px; }
+
+        /* Motor Animado */
+        .motor-visual { display: flex; justify-content: center; margin: 20px 0; position: relative; }
+        .fan { width: 80px; height: 80px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23555"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 14c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/><path d="M12 4V2c-5.52 0-10 4.48-10 10h2c0-4.41 3.59-8 8-8zm0 16v2c5.52 0 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg>') no-repeat center; background-size: contain; transition: transform 0.1s linear; }
+        
+        /* Alertas */
+        .alert-box { 
+            background: #ffdede; color: #c00; padding: 10px; 
+            border-radius: 5px; text-align: center; font-weight: bold; 
+            display: none; border: 1px solid #c00;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
+        .info-refrigeracion {
+            font-size: 0.8rem; color: #666; text-align: center; margin-top: 5px; font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <h1>Panel de Control de Riego</h1>
+
+    <div class="control-group">
+        <label>Humedad del Suelo (%): <span id="humVal" class="value-display">50%</span></label>
+        <input type="range" id="humSlider" min="0" max="100" value="50">
+        <div style="margin-top:5px; font-size:0.8rem; color:#666;">
+            Voltaje Control (u): <span id="voltVal">2.5</span> V
+        </div>
+    </div>
+
+    <div id="safetyAlert" class="alert-box">
+        ⚠️ PROTECCIÓN TÉRMICA ACTIVA ⚠️<br>
+        Enfriando sistema... Espere.
+    </div>
+
+    <div class="motor-visual">
+        <div id="fanBlade" class="fan"></div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text"><span>RPM Motor (x1)</span> <span id="rpmText">0</span></div>
+        <div class="bar-bg"><div id="rpmBar" class="bar-fill rpm-bar"></div></div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text"><span>Refrigeración por Agua (Caudal)</span></div>
+        <div class="bar-bg"><div id="coolBar" class="bar-fill cool-bar"></div></div>
+        <div class="info-refrigeracion">Más RPM = Más flujo de agua fría</div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text"><span>Temperatura Estimada (x2)</span> <span id="tempText">20°C</span></div>
+        <div class="bar-bg"><div id="tempBar" class="bar-fill temp-bar"></div></div>
+    </div>
+
+</div>
+
+<script>
+    // --- 1. PARÁMETROS FÍSICOS (Idénticos al Informe) ---
+    const alpha = 0.5;
+    const beta = 20.0;
+    const k1 = 0.08;   // Calor generado
+    const k2 = 0.03;   // Enfriamiento por agua
+    const gamma = 0.05; // Disipación ambiente
+    const dt = 0.1;    // Paso de tiempo (0.1s)
+
+    // Variables de Estado
+    let x_rpm = 0;
+    let x_temp = 20;
+    
+    // Configuración
+    const TEMP_AMB = 20;
+    const TEMP_CRITICA = 80;
+    const TEMP_REINICIO = 60;
+    const RPM_MAX = 200;
+
+    // Estado del sistema
+    let en_enfriamiento = false;
+    let rotation = 0;
+
+    // Elementos del DOM
+    const slider = document.getElementById('humSlider');
+    const humVal = document.getElementById('humVal');
+    const voltVal = document.getElementById('voltVal');
+    const rpmBar = document.getElementById('rpmBar');
+    const coolBar = document.getElementById('coolBar');
+    const tempBar = document.getElementById('tempBar');
+    const rpmText = document.getElementById('rpmText');
+    const tempText = document.getElementById('tempText');
+    const fanBlade = document.getElementById('fanBlade');
+    const safetyAlert = document.getElementById('safetyAlert');
+
+    // --- BUCLE DE SIMULACIÓN (Corre cada 100ms) ---
+    setInterval(() => {
+        // 1. Leer Entrada
+        let humedad = parseInt(slider.value);
+        humVal.innerText = humedad + "%";
+
+        // 2. Lógica de Control y Seguridad
+        let u = 0;
+
+        // Máquina de Estados para la Protección
+        if (!en_enfriamiento && x_temp >= TEMP_CRITICA) {
+            en_enfriamiento = true; // Activar protección
+        } else if (en_enfriamiento && x_temp <= TEMP_REINICIO) {
+            en_enfriamiento = false; // Desactivar protección
+        }
+
+        if (en_enfriamiento) {
+            u = 0; // Corte forzoso
+            safetyAlert.style.display = 'block';
+        } else {
+            // Control Proporcional Normal
+            u = 5.0 * (1.0 - humedad / 100.0);
+            safetyAlert.style.display = 'none';
+        }
+
+        voltVal.innerText = u.toFixed(2);
+
+        // 3. Física (Método de Euler) - IGUAL QUE ARDUINO
+        // Si está en enfriamiento, forzamos RPM a 0 instantáneamente (freno seco)
+        if(en_enfriamiento) x_rpm = 0; 
+        
+        let dx1 = -alpha * x_rpm + beta * u;
+        // Ecuación térmica: (Calor - Refrigeración Agua) - Disipación Aire
+        let dx2 = (k1 * x_rpm) - (k2 * x_rpm) - gamma * (x_temp - TEMP_AMB);
+
+        // Actualizar estados (si no está frenado por seguridad, actualizamos RPM)
+        if(!en_enfriamiento) x_rpm += dx1 * dt;
+        
+        x_temp += dx2 * dt;
+
+        // Límites físicos
+        if (x_rpm < 0) x_rpm = 0;
+        if (x_rpm > RPM_MAX) x_rpm = RPM_MAX;
+        if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
+
+        // 4. Actualizar Interfaz (Visuales)
+        updateUI();
+
+    }, 100); // 100ms = 0.1s (coincide con dt)
+
+    function updateUI() {
+        // Barras
+        let rpmPct = (x_rpm / RPM_MAX) * 100;
+        rpmBar.style.width = rpmPct + "%";
+        rpmText.innerText = Math.round(x_rpm);
+
+        // Barra de Refrigeración (Azul): Visualiza k2 * RPM
+        // Simplemente es proporcional a las RPM para mostrar el concepto
+        coolBar.style.width = rpmPct + "%";
+
+        // Barra de Temperatura (Amarilla -> Roja)
+        // Escalamos visualmente de 20 a 100 grados
+        let tempPct = ((x_temp - 20) / (100 - 20)) * 100;
+        if(tempPct > 100) tempPct = 100;
+        tempBar.style.width = tempPct + "%";
+        tempText.innerText = Math.round(x_temp) + "°C";
+
+        // Color dinámico temperatura
+        if (x_temp < 60) tempBar.style.backgroundColor = "#ffc107"; // Amarillo
+        else if (x_temp < 80) tempBar.style.backgroundColor = "#fd7e14"; // Naranja
+        else tempBar.style.backgroundColor = "#dc3545"; // Rojo
+
+        // Animación de rotación del motor
+        if (x_rpm > 1) {
+            rotation += x_rpm * 0.1; // Velocidad visual de giro
+            fanBlade.style.transform = `rotate(${rotation}deg)`;
+        }
+    }
+</script>
+
+</body>
+</html>
