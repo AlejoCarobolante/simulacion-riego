@@ -179,6 +179,50 @@
             justify-content: space-between;
         }
 
+        /* --- ESTILOS NUEVOS PARA EL TOGGLE (Switch) --- */
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+        
+        .switch input { opacity: 0; width: 0; height: 0; }
+        
+        .slider-toggle {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        
+        .slider-toggle:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider-toggle { background-color: #28a745; }
+        input:checked + .slider-toggle:before { transform: translateX(24px); }
+        /* ----------------------------------------------- */
+
         /* Visualizadores */
         .gauge-container { 
             margin-bottom: 20px;
@@ -249,27 +293,15 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
-        .fan::before,
-        .fan::after {
+        .fan::before, .fan::after {
             content: '';
             position: absolute;
             background: #3498db;
             border-radius: 5px;
         }
 
-        .fan::before {
-            width: 80%;
-            height: 15%;
-            top: 42.5%;
-            left: 10%;
-        }
-
-        .fan::after {
-            width: 15%;
-            height: 80%;
-            top: 10%;
-            left: 42.5%;
-        }
+        .fan::before { width: 80%; height: 15%; top: 42.5%; left: 10%; }
+        .fan::after { width: 15%; height: 80%; top: 10%; left: 42.5%; }
 
         .motor-center {
             position: absolute;
@@ -308,14 +340,6 @@
             50% { transform: scale(1.02); opacity: 0.9; } 
         }
         
-        .info-text {
-            font-size: 0.85rem; 
-            color: #6c757d; 
-            text-align: center; 
-            margin-top: 8px; 
-            font-style: italic;
-        }
-
         .countdown {
             font-size: 1.5rem;
             margin-top: 5px;
@@ -355,7 +379,6 @@
         <span>💧</span> Sistema de Riego Inteligente
     </h1>
 
-    <!-- Botones de Control -->
     <div class="button-group">
         <button id="demoBtn" class="btn btn-demo">
             <span>▶️</span> Iniciar Demo
@@ -365,12 +388,10 @@
         </button>
     </div>
 
-    <!-- Estado de la Demo -->
     <div id="demoStatus" class="demo-status">
         <div id="demoMessage">Preparando demostración...</div>
     </div>
 
-    <!-- Control Manual -->
     <div id="manualControl" class="control-group">
         <label>
             🌱 Humedad del Suelo (%): 
@@ -381,16 +402,22 @@
             <span>⚡ Voltaje Control (u):</span>
             <span id="voltVal" style="color: #667eea; font-weight: bold;">2.5 V</span>
         </div>
+
+        <div class="toggle-row">
+            <span style="font-weight:600; color:#495057; font-size:0.95rem;">🛡️ Protección Térmica (80°C)</span>
+            <label class="switch">
+                <input type="checkbox" id="protToggle" checked>
+                <span class="slider-toggle"></span>
+            </label>
+        </div>
     </div>
 
-    <!-- Alerta de Seguridad -->
     <div id="safetyAlert" class="alert-box">
         <div>🚨 PROTECCIÓN TÉRMICA ACTIVA 🚨</div>
         <div>Sistema en enfriamiento...</div>
         <div class="countdown" id="cooldownTimer"></div>
     </div>
 
-    <!-- Motor Visual -->
     <div class="motor-visual">
         <div class="motor-container">
             <div id="fanBlade" class="fan"></div>
@@ -402,7 +429,6 @@
         </div>
     </div>
 
-    <!-- Medidores -->
     <div class="gauge-container">
         <div class="status-text">
             <span>⚙️ RPM Motor (x₁)</span> 
@@ -423,7 +449,6 @@
         </div>
     </div>
 
-    <!-- Agrega debajo de los medidores -->
     <div class="gauge-container">
         <div class="status-text">
             <span>Humedad de los ultimos dias</span>
@@ -464,7 +489,7 @@
     let rotation = 0;
     let demoRunning = false;
     let demoStep = 0;
-    let demoTimer = null;
+    let protectionEnabled = true; // NUEVA VARIABLE PARA EL TOGGLE
 
     // Elementos del DOM
     const slider = document.getElementById('humSlider');
@@ -484,6 +509,7 @@
     const manualControl = document.getElementById('manualControl');
     const motorStatus = document.getElementById('motorStatus');
     const motorStatusText = document.getElementById('motorStatusText');
+    const protToggle = document.getElementById('protToggle'); // Referencia al Switch
 
     // === SECUENCIA DE DEMOSTRACIÓN ===
     const demoSequence = [
@@ -500,8 +526,16 @@
     demoBtn.addEventListener('click', startDemo);
     resetBtn.addEventListener('click', resetSystem);
     slider.addEventListener('input', () => {
-        if (!demoRunning) {
-            updateSliderDisplay();
+        if (!demoRunning) updateSliderDisplay();
+    });
+
+    // EVENTO DEL TOGGLE DE PROTECCIÓN
+    protToggle.addEventListener('change', (e) => {
+        protectionEnabled = e.target.checked;
+        if(!protectionEnabled) {
+            // Si apago la protección mientras estaba enfriando, fuerzo la salida
+            en_enfriamiento = false;
+            safetyAlert.style.display = 'none';
         }
     });
 
@@ -557,6 +591,9 @@
         en_enfriamiento = false;
         rotation = 0;
         slider.value = 50;
+        // Restaurar toggle a ON por seguridad al resetear
+        protToggle.checked = true;
+        protectionEnabled = true;
         updateSliderDisplay();
         updateUI();
     }
@@ -575,8 +612,8 @@
         // 2. Lógica de Control y Protección Térmica
         let u = 0;
 
-        // Detección de temperatura crítica
-        if (!en_enfriamiento && x_temp >= TEMP_CRITICA) {
+        // --- CAMBIO CLAVE AQUÍ: Usamos protectionEnabled ---
+        if (protectionEnabled && !en_enfriamiento && x_temp >= TEMP_CRITICA) {
             en_enfriamiento = true;
             tiempo_inicio_corte = Date.now();
         }
@@ -630,7 +667,10 @@
     function updateUI() {
         // Cálculos de porcentajes
         let rpmPct = (x_rpm / RPM_MAX) * 100;
-        let tempPct = Math.min(100, ((x_temp - 20) / (100 - 20)) * 100);
+        
+        // Ajustamos la escala visual si se pasa de 100 grados (al quitar protección)
+        let visualMaxTemp = protectionEnabled ? 100 : 250;
+        let tempPct = Math.min(100, ((x_temp - 20) / (visualMaxTemp - 20)) * 100);
         
         // Barra RPM
         rpmBar.style.width = rpmPct + "%";
@@ -646,6 +686,7 @@
         } else if (x_temp < 80) {
             tempBar.style.background = "linear-gradient(90deg, #fd7e14, #ff922b)";
         } else {
+            // Rojo intenso si pasa el límite
             tempBar.style.background = "linear-gradient(90deg, #dc3545, #ff1744)";
         }
 
