@@ -429,6 +429,10 @@
             <span>Humedad de los ultimos dias</span>
         </div>
         <canvas id="thingspeakChart" width="400" height="180"></canvas>
+        <button id="addChartBtn" style="margin-top:15px;padding:8px 16px;border-radius:8px;border:none;background:#667eea;color:white;font-weight:bold;cursor:pointer;">
+            ➕ Agregar gráfico de ThingSpeak
+        </button>
+        <div id="extraCharts"></div>
     </div>
 
 </div>
@@ -668,41 +672,33 @@
     // THINGSPEAK CHART
     const THINGSPEAK_CHANNEL_ID = '3177048';
     const THINGSPEAK_API_KEY = 'DAZRG8GSL10W5AYJ';
-    const THINGSPEAK_FIELD = 4;
-    const THINGSPEAK_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}/fields/${THINGSPEAK_FIELD}.json?api_key=${THINGSPEAK_API_KEY}&results=20`;
+    const THINGSPEAK_URL_BASE = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}/fields/`;
 
     let thingspeakChart = null;
 
-    function fetchThingSpeakData() {
-        fetch(THINGSPEAK_URL)
+    function fetchThingSpeakData(field, chartId) {
+        const url = `${THINGSPEAK_URL_BASE}${field}.json?api_key=${THINGSPEAK_API_KEY}&results=20`;
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 const feeds = data.feeds || [];
                 const labels = feeds.map(f => {
-                    // Muestra solo hora:minuto
                     const d = new Date(f.created_at);
                     return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
                 });
-                const values = feeds.map(f => parseFloat(f['field' + THINGSPEAK_FIELD]) || 0);
-
-                renderThingSpeakChart(labels, values);
+                const values = feeds.map(f => parseFloat(f['field' + field]) || 0);
+                renderThingSpeakChart(labels, values, chartId, field);
             });
     }
 
-    function renderThingSpeakChart(labels, values) {
-        const ctx = document.getElementById('thingspeakChart').getContext('2d');
-        if (thingspeakChart) {
-            thingspeakChart.data.labels = labels;
-            thingspeakChart.data.datasets[0].data = values;
-            thingspeakChart.update();
-            return;
-        }
-        thingspeakChart = new Chart(ctx, {
+    function renderThingSpeakChart(labels, values, chartId, field) {
+        const ctx = document.getElementById(chartId).getContext('2d');
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Field 4',
+                    label: `Field ${field}`,
                     data: values,
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102,126,234,0.1)',
@@ -723,9 +719,35 @@
         });
     }
 
-    // Carga inicial y refresco cada 60s
-    fetchThingSpeakData();
-    setInterval(fetchThingSpeakData, 60000);
+    // Inicial y refresco para field 4
+    fetchThingSpeakData(4, 'thingspeakChart');
+    setInterval(() => fetchThingSpeakData(4, 'thingspeakChart'), 60000);
+
+    // Botón para agregar gráficos
+    document.getElementById('addChartBtn').addEventListener('click', () => {
+        let fieldId = prompt('Ingrese el ID del field de ThingSpeak que desea graficar (ejemplo: 1, 2, 3, ...):');
+        fieldId = parseInt(fieldId);
+        if (!fieldId || fieldId < 1 || fieldId > 8) {
+            alert('Ingrese un número de field válido (1-8)');
+            return;
+        }
+        // Crear nuevo canvas con botón eliminar
+        const chartContainer = document.createElement('div');
+        chartContainer.style.marginTop = '20px';
+        chartContainer.style.position = 'relative';
+        chartContainer.innerHTML = `
+            <button class="removeChartBtn" style="position:absolute;top:5px;right:5px;padding:2px 8px;border-radius:6px;border:none;background:#dc3545;color:white;cursor:pointer;font-size:1rem;">🗑️</button>
+            <div class="status-text"><span>Field ${fieldId} (ThingSpeak)</span></div>
+            <canvas id="thingspeakChart${fieldId}" width="400" height="180"></canvas>
+        `;
+        document.getElementById('extraCharts').appendChild(chartContainer);
+        fetchThingSpeakData(fieldId, `thingspeakChart${fieldId}`);
+
+        // Evento para eliminar el gráfico
+        chartContainer.querySelector('.removeChartBtn').addEventListener('click', () => {
+            chartContainer.remove();
+        });
+    });
 
     // Inicializar interfaz
     updateSliderDisplay();
