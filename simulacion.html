@@ -3,201 +3,733 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemelo Digital: Sistema de Riego</title>
+    <title>Gemelo Digital: Sistema de Riego Inteligente</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .dashboard { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 400px; }
-        h1 { text-align: center; color: #333; margin-bottom: 20px; font-size: 1.5rem; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        /* Controles */
-        .control-group { margin-bottom: 25px; background: #e9ecef; padding: 15px; border-radius: 10px; }
-        label { display: block; margin-bottom: 10px; font-weight: bold; color: #555; }
-        input[type=range] { width: 100%; cursor: pointer; }
-        .value-display { text-align: right; font-weight: bold; color: #007bff; }
-
-        /* Visualizadores */
-        .gauge-container { margin-bottom: 20px; }
-        .bar-bg { background: #ddd; height: 20px; border-radius: 10px; overflow: hidden; position: relative; }
-        .bar-fill { height: 100%; width: 0%; transition: width 0.1s linear, background-color 0.5s; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px;
+        }
         
-        .rpm-bar { background-color: #28a745; }
-        .temp-bar { background-color: #ffc107; }
-        .cool-bar { background-color: #17a2b8; }
-
-        .status-text { display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px; }
-
-        /* Motor Animado */
-        .motor-visual { display: flex; justify-content: center; margin: 20px 0; position: relative; }
-        .fan { width: 80px; height: 80px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23555"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 14c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/><path d="M12 4V2c-5.52 0-10 4.48-10 10h2c0-4.41 3.59-8 8-8zm0 16v2c5.52 0 10-4.48 10-10h-2c0 4.41-3.59 8-8 8z"/></svg>') no-repeat center; background-size: contain; transition: transform 0.1s linear; }
+        .dashboard { 
+            background: white; 
+            padding: 2.5rem; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            width: 100%;
+            max-width: 500px;
+        }
         
-        /* Alertas */
-        .alert-box { 
-            background: #ffdede; color: #c00; padding: 10px; 
-            border-radius: 5px; text-align: center; font-weight: bold; 
-            display: none; border: 1px solid #c00;
-            animation: pulse 1s infinite;
+        h1 { 
+            text-align: center; 
+            color: #2c3e50; 
+            margin-bottom: 25px; 
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* Botones de Control */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-demo {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-demo:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        /* Estado de Demo */
+        .demo-status {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Controles Manuales */
+        .control-group { 
+            margin-bottom: 25px; 
+            background: #f8f9fa; 
+            padding: 18px; 
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .control-group:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .control-group.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
         
-        .info-refrigeracion {
-            font-size: 0.8rem; color: #666; text-align: center; margin-top: 5px; font-style: italic;
+        label { 
+            display: block; 
+            margin-bottom: 12px; 
+            font-weight: 600; 
+            color: #495057;
+            font-size: 0.95rem;
+        }
+        
+        input[type=range] { 
+            width: 100%; 
+            cursor: pointer;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .value-display { 
+            float: right; 
+            font-weight: bold; 
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .volt-display {
+            margin-top: 8px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Visualizadores */
+        .gauge-container { 
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .bar-bg { 
+            background: #e9ecef; 
+            height: 25px; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .bar-fill { 
+            height: 100%; 
+            width: 0%; 
+            transition: width 0.1s linear, background-color 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .rpm-bar { background: linear-gradient(90deg, #28a745, #20c997); }
+        .temp-bar { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+        .cool-bar { background: linear-gradient(90deg, #17a2b8, #00d4ff); }
+
+        .status-text { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 0.9rem; 
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        /* Motor Animado Mejorado */
+        .motor-visual { 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            margin: 25px 0; 
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+        }
+        
+        .motor-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .fan { 
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            background: radial-gradient(circle, #34495e 20%, #2c3e50 100%);
+            border-radius: 50%;
+            transition: transform 0.05s linear;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .fan::before,
+        .fan::after {
+            content: '';
+            position: absolute;
+            background: #3498db;
+            border-radius: 5px;
+        }
+
+        .fan::before {
+            width: 80%;
+            height: 15%;
+            top: 42.5%;
+            left: 10%;
+        }
+
+        .fan::after {
+            width: 15%;
+            height: 80%;
+            top: 10%;
+            left: 42.5%;
+        }
+
+        .motor-center {
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            background: #95a5a6;
+            border-radius: 50%;
+            top: 35%;
+            left: 35%;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .motor-label {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        /* Alertas Mejoradas */
+        .alert-box { 
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white; 
+            padding: 15px; 
+            border-radius: 10px; 
+            text-align: center; 
+            font-weight: bold; 
+            display: none;
+            margin-bottom: 20px;
+            animation: pulse 1s infinite;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        @keyframes pulse { 
+            0%, 100% { transform: scale(1); opacity: 1; } 
+            50% { transform: scale(1.02); opacity: 0.9; } 
+        }
+        
+        .info-text {
+            font-size: 0.85rem; 
+            color: #6c757d; 
+            text-align: center; 
+            margin-top: 8px; 
+            font-style: italic;
+        }
+
+        .countdown {
+            font-size: 1.5rem;
+            margin-top: 5px;
+        }
+
+        /* Indicadores de Estado */
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: blink 1s infinite;
+        }
+
+        .status-running { background: #28a745; }
+        .status-cooling { background: #17a2b8; }
+        .status-critical { background: #dc3545; }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .dashboard { padding: 1.5rem; }
+            h1 { font-size: 1.4rem; }
+            .button-group { flex-direction: column; }
         }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <h1>Panel de Control de Riego</h1>
+    <h1>
+        <span>💧</span> Sistema de Riego Inteligente
+    </h1>
 
-    <div class="control-group">
-        <label>Humedad del Suelo (%): <span id="humVal" class="value-display">50%</span></label>
+    <!-- Botones de Control -->
+    <div class="button-group">
+        <button id="demoBtn" class="btn btn-demo">
+            <span>▶️</span> Iniciar Demo
+        </button>
+        <button id="resetBtn" class="btn btn-reset">
+            <span>🔄</span> Resetear
+        </button>
+    </div>
+
+    <!-- Estado de la Demo -->
+    <div id="demoStatus" class="demo-status">
+        <div id="demoMessage">Preparando demostración...</div>
+    </div>
+
+    <!-- Control Manual -->
+    <div id="manualControl" class="control-group">
+        <label>
+            🌱 Humedad del Suelo (%): 
+            <span id="humVal" class="value-display">50%</span>
+        </label>
         <input type="range" id="humSlider" min="0" max="100" value="50">
-        <div style="margin-top:5px; font-size:0.8rem; color:#666;">
-            Voltaje Control (u): <span id="voltVal">2.5</span> V
+        <div class="volt-display">
+            <span>⚡ Voltaje Control (u):</span>
+            <span id="voltVal" style="color: #667eea; font-weight: bold;">2.5 V</span>
         </div>
     </div>
 
+    <!-- Alerta de Seguridad -->
     <div id="safetyAlert" class="alert-box">
-        ⚠️ PROTECCIÓN TÉRMICA ACTIVA ⚠️<br>
-        Enfriando sistema... Espere.
+        <div>🚨 PROTECCIÓN TÉRMICA ACTIVA 🚨</div>
+        <div>Sistema en enfriamiento...</div>
+        <div class="countdown" id="cooldownTimer"></div>
     </div>
 
+    <!-- Motor Visual -->
     <div class="motor-visual">
-        <div id="fanBlade" class="fan"></div>
+        <div class="motor-container">
+            <div id="fanBlade" class="fan"></div>
+            <div class="motor-center"></div>
+        </div>
+        <div class="motor-label">
+            <span id="motorStatus" class="status-indicator"></span>
+            <span id="motorStatusText">Motor Detenido</span>
+        </div>
+    </div>
+
+    <!-- Medidores -->
+    <div class="gauge-container">
+        <div class="status-text">
+            <span>⚙️ RPM Motor (x₁)</span> 
+            <span id="rpmText" style="color: #28a745;">0 RPM</span>
+        </div>
+        <div class="bar-bg">
+            <div id="rpmBar" class="bar-fill rpm-bar"></div>
+        </div>
     </div>
 
     <div class="gauge-container">
-        <div class="status-text"><span>RPM Motor (x1)</span> <span id="rpmText">0</span></div>
-        <div class="bar-bg"><div id="rpmBar" class="bar-fill rpm-bar"></div></div>
+        <div class="status-text">
+            <span>🌡️ Temperatura (x₂)</span> 
+            <span id="tempText" style="color: #ffc107;">20°C</span>
+        </div>
+        <div class="bar-bg">
+            <div id="tempBar" class="bar-fill temp-bar"></div>
+        </div>
     </div>
 
+    <!-- Agrega debajo de los medidores -->
     <div class="gauge-container">
-        <div class="status-text"><span>Refrigeración por Agua (Caudal)</span></div>
-        <div class="bar-bg"><div id="coolBar" class="bar-fill cool-bar"></div></div>
-        <div class="info-refrigeracion">Más RPM = Más flujo de agua fría</div>
-    </div>
-
-    <div class="gauge-container">
-        <div class="status-text"><span>Temperatura Estimada (x2)</span> <span id="tempText">20°C</span></div>
-        <div class="bar-bg"><div id="tempBar" class="bar-fill temp-bar"></div></div>
+        <div class="status-text">
+            <span>Humedad de los ultimos dias</span>
+        </div>
+        <canvas id="thingspeakChart" width="400" height="180"></canvas>
     </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // --- 1. PARÁMETROS FÍSICOS (Idénticos al Informe) ---
+    // === PARÁMETROS FÍSICOS ===
     const alpha = 0.5;
     const beta = 20.0;
-    const k1 = 0.08;   // Calor generado
-    const k2 = 0.03;   // Enfriamiento por agua
-    const gamma = 0.05; // Disipación ambiente
-    const dt = 0.1;    // Paso de tiempo (0.1s)
+    const k1 = 0.08;   // Generación de calor
+    const k2 = 0.03;   // Refrigeración por agua
+    const gamma = 0.05; // Disipación al ambiente
+    const dt = 0.1;    // Paso de tiempo (100ms)
 
     // Variables de Estado
     let x_rpm = 0;
     let x_temp = 20;
     
-    // Configuración
+    // Configuración de Seguridad
     const TEMP_AMB = 20;
     const TEMP_CRITICA = 80;
     const TEMP_REINICIO = 60;
     const RPM_MAX = 200;
+    const TIEMPO_ESPERA = 3000; // 3 segundos
 
-    // Estado del sistema
+    // Estado del Sistema
     let en_enfriamiento = false;
+    let tiempo_inicio_corte = 0;
     let rotation = 0;
+    let demoRunning = false;
+    let demoStep = 0;
+    let demoTimer = null;
 
     // Elementos del DOM
     const slider = document.getElementById('humSlider');
     const humVal = document.getElementById('humVal');
     const voltVal = document.getElementById('voltVal');
     const rpmBar = document.getElementById('rpmBar');
-    const coolBar = document.getElementById('coolBar');
     const tempBar = document.getElementById('tempBar');
     const rpmText = document.getElementById('rpmText');
     const tempText = document.getElementById('tempText');
     const fanBlade = document.getElementById('fanBlade');
     const safetyAlert = document.getElementById('safetyAlert');
+    const cooldownTimer = document.getElementById('cooldownTimer');
+    const demoBtn = document.getElementById('demoBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const demoStatus = document.getElementById('demoStatus');
+    const demoMessage = document.getElementById('demoMessage');
+    const manualControl = document.getElementById('manualControl');
+    const motorStatus = document.getElementById('motorStatus');
+    const motorStatusText = document.getElementById('motorStatusText');
 
-    // --- BUCLE DE SIMULACIÓN (Corre cada 100ms) ---
+    // === SECUENCIA DE DEMOSTRACIÓN ===
+    const demoSequence = [
+        { time: 0,    humedad: 0,  message: "🌱 Suelo extremadamente seco (0%) - Activando bomba" },
+        { time: 2000, humedad: 10, message: "💧 Comienza el riego (10%)" },
+        { time: 5000, humedad: 25, message: "💧 Humedad subiendo (25%)" },
+        { time: 9000, humedad: 40, message: "💧 Humedad media (40%)" },
+        { time: 13000, humedad: 60, message: "✅ Humedad adecuada (60%)" },
+        { time: 17000, humedad: 80, message: "💧 Humedad óptima alcanzada (80%)" },
+        { time: 20000, humedad: 50, message: "✨ Demo completada - Sistema estabilizado (50%)" }
+    ];
+
+    // === EVENTOS ===
+    demoBtn.addEventListener('click', startDemo);
+    resetBtn.addEventListener('click', resetSystem);
+    slider.addEventListener('input', () => {
+        if (!demoRunning) {
+            updateSliderDisplay();
+        }
+    });
+
+    // === FUNCIONES DE DEMO ===
+    function startDemo() {
+        if (demoRunning) return;
+        
+        demoRunning = true;
+        demoStep = 0;
+        demoBtn.disabled = true;
+        demoBtn.innerHTML = '<span>⏸️</span> Demo en curso...';
+        demoStatus.style.display = 'block';
+        manualControl.classList.add('disabled');
+        
+        resetSystem();
+        runDemoSequence();
+    }
+
+    function runDemoSequence() {
+        if (demoStep >= demoSequence.length) {
+            endDemo();
+            return;
+        }
+
+        const step = demoSequence[demoStep];
+        
+        setTimeout(() => {
+            if (!demoRunning) return;
+            
+            slider.value = step.humedad;
+            updateSliderDisplay();
+            demoMessage.textContent = step.message;
+            
+            demoStep++;
+            runDemoSequence();
+        }, demoStep === 0 ? 0 : demoSequence[demoStep].time - demoSequence[demoStep - 1].time);
+    }
+
+    function endDemo() {
+        demoRunning = false;
+        demoBtn.disabled = false;
+        demoBtn.innerHTML = '<span>▶️</span> Iniciar Demo';
+        
+        setTimeout(() => {
+            demoStatus.style.display = 'none';
+            manualControl.classList.remove('disabled');
+        }, 2000);
+    }
+
+    function resetSystem() {
+        x_rpm = 0;
+        x_temp = 20;
+        en_enfriamiento = false;
+        rotation = 0;
+        slider.value = 50;
+        updateSliderDisplay();
+        updateUI();
+    }
+
+    function updateSliderDisplay() {
+        const humedad = parseInt(slider.value);
+        humVal.innerText = humedad + "%";
+    }
+
+    // BUCLE PRINCIPAL DE SIMULACIÓN 
     setInterval(() => {
         // 1. Leer Entrada
         let humedad = parseInt(slider.value);
         humVal.innerText = humedad + "%";
 
-        // 2. Lógica de Control y Seguridad
+        // 2. Lógica de Control y Protección Térmica
         let u = 0;
 
-        // Máquina de Estados para la Protección
+        // Detección de temperatura crítica
         if (!en_enfriamiento && x_temp >= TEMP_CRITICA) {
-            en_enfriamiento = true; // Activar protección
-        } else if (en_enfriamiento && x_temp <= TEMP_REINICIO) {
-            en_enfriamiento = false; // Desactivar protección
+            en_enfriamiento = true;
+            tiempo_inicio_corte = Date.now();
         }
 
         if (en_enfriamiento) {
             u = 0; // Corte forzoso
             safetyAlert.style.display = 'block';
+
+            // Calcular tiempo restante
+            const tiempoPasado = Date.now() - tiempo_inicio_corte;
+            const tiempoRestante = Math.max(0, Math.ceil((TIEMPO_ESPERA - tiempoPasado) / 1000));
+            cooldownTimer.textContent = tiempoRestante + "s";
+
+            // Física de enfriamiento (solo disipación)
+            let dx2 = -gamma * (x_temp - TEMP_AMB);
+            x_temp += dx2 * dt;
+            if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
+
+            x_rpm = 0; // Motor apagado
+
+            // Verificar si puede salir del modo enfriamiento (ambas condiciones)
+            if (tiempoPasado > TIEMPO_ESPERA && x_temp < TEMP_REINICIO) {
+                en_enfriamiento = false;
+                safetyAlert.style.display = 'none';
+            }
         } else {
             // Control Proporcional Normal
             u = 5.0 * (1.0 - humedad / 100.0);
+            u = Math.max(0, Math.min(u, 5.0)); // Limitar voltaje entre 0 y 5V
             safetyAlert.style.display = 'none';
+
+            // --- CASO NORMAL ---
+            let dx1 = -alpha * x_rpm + beta * u;
+            let dx2 = (k1 - k2) * x_rpm - gamma * (x_temp - TEMP_AMB);
+
+            x_rpm += dx1 * dt;
+            x_temp += dx2 * dt;
+
+            x_rpm = Math.max(0, Math.min(x_rpm, RPM_MAX));
+            if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
         }
 
-        voltVal.innerText = u.toFixed(2);
+        voltVal.innerText = u.toFixed(2) + " V";
 
-        // 3. Física (Método de Euler) - IGUAL QUE ARDUINO
-        // Si está en enfriamiento, forzamos RPM a 0 instantáneamente (freno seco)
-        if(en_enfriamiento) x_rpm = 0; 
-        
-        let dx1 = -alpha * x_rpm + beta * u;
-        // Ecuación térmica: (Calor - Refrigeración Agua) - Disipación Aire
-        let dx2 = (k1 * x_rpm) - (k2 * x_rpm) - gamma * (x_temp - TEMP_AMB);
-
-        // Actualizar estados (si no está frenado por seguridad, actualizamos RPM)
-        if(!en_enfriamiento) x_rpm += dx1 * dt;
-        
-        x_temp += dx2 * dt;
-
-        // Límites físicos
-        if (x_rpm < 0) x_rpm = 0;
-        if (x_rpm > RPM_MAX) x_rpm = RPM_MAX;
-        if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
-
-        // 4. Actualizar Interfaz (Visuales)
+        // 4. Actualizar Interfaz
         updateUI();
 
-    }, 100); // 100ms = 0.1s (coincide con dt)
+    }, 130); // 130ms = 0.13s
 
+    // ACTUALIZACIÓN DE INTERFAZ 
     function updateUI() {
-        // Barras
+        // Cálculos de porcentajes
         let rpmPct = (x_rpm / RPM_MAX) * 100;
+        let tempPct = Math.min(100, ((x_temp - 20) / (100 - 20)) * 100);
+        
+        // Barra RPM
         rpmBar.style.width = rpmPct + "%";
-        rpmText.innerText = Math.round(x_rpm);
+        rpmText.innerText = Math.round(x_rpm) + " RPM";
 
-        // Barra de Refrigeración (Azul): Visualiza k2 * RPM
-        // Simplemente es proporcional a las RPM para mostrar el concepto
-        coolBar.style.width = rpmPct + "%";
-
-        // Barra de Temperatura (Amarilla -> Roja)
-        // Escalamos visualmente de 20 a 100 grados
-        let tempPct = ((x_temp - 20) / (100 - 20)) * 100;
-        if(tempPct > 100) tempPct = 100;
+        // Barra de Temperatura
         tempBar.style.width = tempPct + "%";
         tempText.innerText = Math.round(x_temp) + "°C";
 
-        // Color dinámico temperatura
-        if (x_temp < 60) tempBar.style.backgroundColor = "#ffc107"; // Amarillo
-        else if (x_temp < 80) tempBar.style.backgroundColor = "#fd7e14"; // Naranja
-        else tempBar.style.backgroundColor = "#dc3545"; // Rojo
+        // Color dinámico de temperatura
+        if (x_temp < 60) {
+            tempBar.style.background = "linear-gradient(90deg, #ffc107, #ffca2c)";
+        } else if (x_temp < 80) {
+            tempBar.style.background = "linear-gradient(90deg, #fd7e14, #ff922b)";
+        } else {
+            tempBar.style.background = "linear-gradient(90deg, #dc3545, #ff1744)";
+        }
 
-        // Animación de rotación del motor
+        // Estado del motor
+        if (en_enfriamiento) {
+            motorStatus.className = 'status-indicator status-cooling';
+            motorStatusText.textContent = 'Sistema en Enfriamiento';
+        } else if (x_rpm > 10) {
+            motorStatus.className = 'status-indicator status-running';
+            motorStatusText.textContent = 'Motor Activo';
+        } else {
+            motorStatus.className = 'status-indicator';
+            motorStatusText.textContent = 'Motor Detenido';
+            motorStatus.style.background = '#6c757d';
+        }
+
+        // Animación del motor
         if (x_rpm > 1) {
-            rotation += x_rpm * 0.1; // Velocidad visual de giro
+            rotation += x_rpm * 0.15;
             fanBlade.style.transform = `rotate(${rotation}deg)`;
         }
     }
+
+    // THINGSPEAK CHART
+    const THINGSPEAK_CHANNEL_ID = '3177048';
+    const THINGSPEAK_API_KEY = 'DAZRG8GSL10W5AYJ';
+    const THINGSPEAK_FIELD = 4;
+    const THINGSPEAK_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}/fields/${THINGSPEAK_FIELD}.json?api_key=${THINGSPEAK_API_KEY}&results=20`;
+
+    let thingspeakChart = null;
+
+    function fetchThingSpeakData() {
+        fetch(THINGSPEAK_URL)
+            .then(res => res.json())
+            .then(data => {
+                const feeds = data.feeds || [];
+                const labels = feeds.map(f => {
+                    // Muestra solo hora:minuto
+                    const d = new Date(f.created_at);
+                    return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+                });
+                const values = feeds.map(f => parseFloat(f['field' + THINGSPEAK_FIELD]) || 0);
+
+                renderThingSpeakChart(labels, values);
+            });
+    }
+
+    function renderThingSpeakChart(labels, values) {
+        const ctx = document.getElementById('thingspeakChart').getContext('2d');
+        if (thingspeakChart) {
+            thingspeakChart.data.labels = labels;
+            thingspeakChart.data.datasets[0].data = values;
+            thingspeakChart.update();
+            return;
+        }
+        thingspeakChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Field 4',
+                    data: values,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102,126,234,0.1)',
+                    fill: true,
+                    tension: 0.2,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                scales: {
+                    x: { display: true, title: { display: false } },
+                    y: { display: true, title: { display: true, text: 'Valor' } }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Carga inicial y refresco cada 60s
+    fetchThingSpeakData();
+    setInterval(fetchThingSpeakData, 60000);
+
+    // Inicializar interfaz
+    updateSliderDisplay();
+    updateUI();
 </script>
 
 </body>
