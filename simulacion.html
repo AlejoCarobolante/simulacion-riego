@@ -24,6 +24,8 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
             width: 100%;
             max-width: 500px;
+            position: relative; /* Necesario para el overlay */
+            overflow: hidden;   /* Para que el overlay respete los bordes redondos */
         }
         
         h1 { 
@@ -36,6 +38,54 @@
             justify-content: center;
             gap: 10px;
         }
+
+        /* --- OVERLAY DE CONGELADO (NUEVO) --- */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            display: none; /* Oculto por defecto */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .overlay h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .overlay p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
+        }
+
+        .btn-exit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn-exit:hover {
+            transform: scale(1.05);
+        }
+        /* ----------------------------------- */
 
         /* Botones de Control */
         .button-group {
@@ -179,7 +229,7 @@
             justify-content: space-between;
         }
 
-        /* --- ESTILOS NUEVOS PARA EL TOGGLE (Switch) --- */
+        /* Toggle Switch */
         .toggle-row {
             display: flex;
             justify-content: space-between;
@@ -221,7 +271,6 @@
         
         input:checked + .slider-toggle { background-color: #28a745; }
         input:checked + .slider-toggle:before { transform: translateX(24px); }
-        /* ----------------------------------------------- */
 
         /* Visualizadores */
         .gauge-container { 
@@ -266,7 +315,7 @@
             color: #495057;
         }
 
-        /* Motor Animado Mejorado */
+        /* Motor Animado */
         .motor-visual { 
             display: flex; 
             flex-direction: column;
@@ -321,7 +370,7 @@
             color: #2c3e50;
         }
         
-        /* Alertas Mejoradas */
+        /* Alertas */
         .alert-box { 
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
             color: white; 
@@ -390,6 +439,13 @@
 
     <div id="demoStatus" class="demo-status">
         <div id="demoMessage">Preparando demostración...</div>
+    </div>
+
+    <div id="demoEndOverlay" class="overlay">
+        <h2>✨ Demo Completada</h2>
+        <p>El sistema ha alcanzado el 100% de humedad.</p>
+        <p style="font-size: 0.9rem; margin-top:-15px;">(Valores congelados para análisis)</p>
+        <button id="exitDemoBtn" class="btn-exit">Volver al Panel</button>
     </div>
 
     <div id="manualControl" class="control-group">
@@ -481,7 +537,7 @@
     const TEMP_CRITICA = 80;
     const TEMP_REINICIO = 60;
     const RPM_MAX = 200;
-    const TIEMPO_ESPERA = 3000; // 3 segundos
+    const TIEMPO_ESPERA = 3000;
 
     // Estado del Sistema
     let en_enfriamiento = false;
@@ -489,7 +545,10 @@
     let rotation = 0;
     let demoRunning = false;
     let demoStep = 0;
-    let protectionEnabled = true; // NUEVA VARIABLE PARA EL TOGGLE
+    let protectionEnabled = true;
+    
+    // NUEVA VARIABLE: Para congelar la física
+    let simulationPaused = false; 
 
     // Elementos del DOM
     const slider = document.getElementById('humSlider');
@@ -509,31 +568,32 @@
     const manualControl = document.getElementById('manualControl');
     const motorStatus = document.getElementById('motorStatus');
     const motorStatusText = document.getElementById('motorStatusText');
-    const protToggle = document.getElementById('protToggle'); // Referencia al Switch
+    const protToggle = document.getElementById('protToggle');
+    const demoEndOverlay = document.getElementById('demoEndOverlay');
+    const exitDemoBtn = document.getElementById('exitDemoBtn');
 
     // === SECUENCIA DE DEMOSTRACIÓN ===
+    // Modificada para terminar en 100%
     const demoSequence = [
-        { time: 0,    humedad: 0,  message: "🌱 Suelo extremadamente seco (0%) - Activando bomba" },
-        { time: 2000, humedad: 10, message: "💧 Comienza el riego (10%)" },
-        { time: 5000, humedad: 25, message: "💧 Humedad subiendo (25%)" },
-        { time: 9000, humedad: 40, message: "💧 Humedad media (40%)" },
-        { time: 13000, humedad: 60, message: "✅ Humedad adecuada (60%)" },
-        { time: 17000, humedad: 80, message: "💧 Humedad óptima alcanzada (80%)" },
-        { time: 20000, humedad: 50, message: "✨ Demo completada - Sistema estabilizado (50%)" }
+        { time: 0,    humedad: 0,  message: "🌱 Suelo seco (0%) - Máxima potencia" },
+        { time: 3000, humedad: 25, message: "💧 Humedad subiendo (25%)" },
+        { time: 7000, humedad: 50, message: "💧 Riego constante (50%)" },
+        { time: 12000, humedad: 80, message: "✅ Casi listo (80%) - Bajando RPM" },
+        { time: 16000, humedad: 100, message: "✨ Riego Completado (100%)" }
     ];
 
     // === EVENTOS ===
     demoBtn.addEventListener('click', startDemo);
     resetBtn.addEventListener('click', resetSystem);
+    exitDemoBtn.addEventListener('click', exitFrozenDemo); // Nuevo evento
+    
     slider.addEventListener('input', () => {
         if (!demoRunning) updateSliderDisplay();
     });
 
-    // EVENTO DEL TOGGLE DE PROTECCIÓN
     protToggle.addEventListener('change', (e) => {
         protectionEnabled = e.target.checked;
         if(!protectionEnabled) {
-            // Si apago la protección mientras estaba enfriando, fuerzo la salida
             en_enfriamiento = false;
             safetyAlert.style.display = 'none';
         }
@@ -545,10 +605,11 @@
         
         demoRunning = true;
         demoStep = 0;
+        simulationPaused = false; // Asegurar física activa
         demoBtn.disabled = true;
         demoBtn.innerHTML = '<span>⏸️</span> Demo en curso...';
         demoStatus.style.display = 'block';
-        manualControl.classList.add('disabled');
+        slider.disabled = true; // Solo deshabilito slider
         
         resetSystem();
         runDemoSequence();
@@ -556,7 +617,7 @@
 
     function runDemoSequence() {
         if (demoStep >= demoSequence.length) {
-            endDemo();
+            freezeDemo(); // Al terminar, congelamos
             return;
         }
 
@@ -574,15 +635,22 @@
         }, demoStep === 0 ? 0 : demoSequence[demoStep].time - demoSequence[demoStep - 1].time);
     }
 
-    function endDemo() {
+    // NUEVA FUNCIÓN: Congelar
+    function freezeDemo() {
+        simulationPaused = true; // Detiene el setInterval físico
+        demoEndOverlay.style.display = 'flex'; // Muestra el overlay
+        demoStatus.style.display = 'none';
+    }
+
+    // NUEVA FUNCIÓN: Salir del congelado
+    function exitFrozenDemo() {
+        demoEndOverlay.style.display = 'none';
         demoRunning = false;
+        simulationPaused = false; // Reactiva física
+        
         demoBtn.disabled = false;
         demoBtn.innerHTML = '<span>▶️</span> Iniciar Demo';
-        
-        setTimeout(() => {
-            demoStatus.style.display = 'none';
-            manualControl.classList.remove('disabled');
-        }, 2000);
+        slider.disabled = false;
     }
 
     function resetSystem() {
@@ -591,9 +659,13 @@
         en_enfriamiento = false;
         rotation = 0;
         slider.value = 50;
-        // Restaurar toggle a ON por seguridad al resetear
         protToggle.checked = true;
         protectionEnabled = true;
+        
+        // Si reseteamos, quitamos cualquier estado de pausa/overlay
+        simulationPaused = false;
+        demoEndOverlay.style.display = 'none';
+        
         updateSliderDisplay();
         updateUI();
     }
@@ -605,47 +677,43 @@
 
     // BUCLE PRINCIPAL DE SIMULACIÓN 
     setInterval(() => {
+        // Si está congelado, NO calculamos nada, retornamos antes.
+        if (simulationPaused) return; 
+
         // 1. Leer Entrada
         let humedad = parseInt(slider.value);
         humVal.innerText = humedad + "%";
 
-        // 2. Lógica de Control y Protección Térmica
+        // 2. Lógica de Control y Protección
         let u = 0;
 
-        // --- CAMBIO CLAVE AQUÍ: Usamos protectionEnabled ---
         if (protectionEnabled && !en_enfriamiento && x_temp >= TEMP_CRITICA) {
             en_enfriamiento = true;
             tiempo_inicio_corte = Date.now();
         }
 
         if (en_enfriamiento) {
-            u = 0; // Corte forzoso
+            u = 0;
             safetyAlert.style.display = 'block';
-
-            // Calcular tiempo restante
             const tiempoPasado = Date.now() - tiempo_inicio_corte;
             const tiempoRestante = Math.max(0, Math.ceil((TIEMPO_ESPERA - tiempoPasado) / 1000));
             cooldownTimer.textContent = tiempoRestante + "s";
 
-            // Física de enfriamiento (solo disipación)
             let dx2 = -gamma * (x_temp - TEMP_AMB);
             x_temp += dx2 * dt;
             if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
+            if (x_temp > 100) x_temp = 100; // Limitar temperatura máxima
+            x_rpm = 0; 
 
-            x_rpm = 0; // Motor apagado
-
-            // Verificar si puede salir del modo enfriamiento (ambas condiciones)
             if (tiempoPasado > TIEMPO_ESPERA && x_temp < TEMP_REINICIO) {
                 en_enfriamiento = false;
                 safetyAlert.style.display = 'none';
             }
         } else {
-            // Control Proporcional Normal
             u = 5.0 * (1.0 - humedad / 100.0);
-            u = Math.max(0, Math.min(u, 5.0)); // Limitar voltaje entre 0 y 5V
+            u = Math.max(0, Math.min(u, 5.0)); 
             safetyAlert.style.display = 'none';
 
-            // --- CASO NORMAL ---
             let dx1 = -alpha * x_rpm + beta * u;
             let dx2 = (k1 - k2) * x_rpm - gamma * (x_temp - TEMP_AMB);
 
@@ -654,43 +722,35 @@
 
             x_rpm = Math.max(0, Math.min(x_rpm, RPM_MAX));
             if (x_temp < TEMP_AMB) x_temp = TEMP_AMB;
+            if (x_temp > 100) x_temp = 100; // Limitar temperatura máxima
         }
 
         voltVal.innerText = u.toFixed(2) + " V";
 
-        // 4. Actualizar Interfaz
         updateUI();
 
-    }, 130); // 130ms = 0.13s
+    }, 130); 
 
     // ACTUALIZACIÓN DE INTERFAZ 
     function updateUI() {
-        // Cálculos de porcentajes
         let rpmPct = (x_rpm / RPM_MAX) * 100;
-        
-        // Ajustamos la escala visual si se pasa de 100 grados (al quitar protección)
         let visualMaxTemp = protectionEnabled ? 100 : 250;
         let tempPct = Math.min(100, ((x_temp - 20) / (visualMaxTemp - 20)) * 100);
         
-        // Barra RPM
         rpmBar.style.width = rpmPct + "%";
         rpmText.innerText = Math.round(x_rpm) + " RPM";
 
-        // Barra de Temperatura
         tempBar.style.width = tempPct + "%";
         tempText.innerText = Math.round(x_temp) + "°C";
 
-        // Color dinámico de temperatura
         if (x_temp < 60) {
             tempBar.style.background = "linear-gradient(90deg, #ffc107, #ffca2c)";
         } else if (x_temp < 80) {
             tempBar.style.background = "linear-gradient(90deg, #fd7e14, #ff922b)";
         } else {
-            // Rojo intenso si pasa el límite
             tempBar.style.background = "linear-gradient(90deg, #dc3545, #ff1744)";
         }
 
-        // Estado del motor
         if (en_enfriamiento) {
             motorStatus.className = 'status-indicator status-cooling';
             motorStatusText.textContent = 'Sistema en Enfriamiento';
@@ -703,7 +763,6 @@
             motorStatus.style.background = '#6c757d';
         }
 
-        // Animación del motor
         if (x_rpm > 1) {
             rotation += x_rpm * 0.15;
             fanBlade.style.transform = `rotate(${rotation}deg)`;
@@ -760,11 +819,9 @@
         });
     }
 
-    // Inicial y refresco para field 4
     fetchThingSpeakData(4, 'thingspeakChart');
     setInterval(() => fetchThingSpeakData(4, 'thingspeakChart'), 60000);
 
-    // Botón para agregar gráficos
     document.getElementById('addChartBtn').addEventListener('click', () => {
         let fieldId = prompt('Ingrese el ID del field de ThingSpeak que desea graficar (ejemplo: 1, 2, 3, ...):');
         fieldId = parseInt(fieldId);
@@ -772,7 +829,6 @@
             alert('Ingrese un número de field válido (1-8)');
             return;
         }
-        // Crear nuevo canvas con botón eliminar
         const chartContainer = document.createElement('div');
         chartContainer.style.marginTop = '20px';
         chartContainer.style.position = 'relative';
@@ -784,13 +840,11 @@
         document.getElementById('extraCharts').appendChild(chartContainer);
         fetchThingSpeakData(fieldId, `thingspeakChart${fieldId}`);
 
-        // Evento para eliminar el gráfico
         chartContainer.querySelector('.removeChartBtn').addEventListener('click', () => {
             chartContainer.remove();
         });
     });
 
-    // Inicializar interfaz
     updateSliderDisplay();
     updateUI();
 </script>
