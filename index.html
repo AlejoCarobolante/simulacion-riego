@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemelo Digital: Sistema de Riego</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dashboard">
+    <h1><span>💧</span> Sistema de Riego Inteligente</h1>
+
+    <div class="button-group">
+        <button id="demoBtn" class="btn btn-demo"><span>▶️</span> Iniciar Demo</button>
+        <button id="resetBtn" class="btn btn-reset"><span>🔄</span> Resetear</button>
+    </div>
+
+    <div id="demoStatus" class="demo-status">
+        <div id="demoMessage">Preparando demostración...</div>
+    </div>
+
+    <div id="demoEndOverlay" class="overlay">
+        <h2>✨ Demo Completada</h2>
+        <p>Sistema estabilizado al 100% de humedad.</p>
+        <p style="font-size: 0.9rem; margin-top:-15px;">(Física pausada para análisis)</p>
+        <button id="exitDemoBtn" class="btn-exit">Volver al Panel</button>
+    </div>
+
+    <div id="manualControl" class="control-group">
+        <label>
+            🌱 Humedad del Suelo (%): 
+            <span id="humVal" class="value-display">50%</span>
+        </label>
+        <input type="range" id="humSlider" min="0" max="100" value="50">
+        
+        <div class="volt-display">
+            <span>⚡ Voltaje Control (u):</span>
+            <span id="voltVal" style="color: #667eea; font-weight: bold;">2.5 V</span>
+        </div>
+
+        <div class="toggle-row">
+            <span style="font-weight:600; color:#495057; font-size:0.95rem;">🛡️ Protección Térmica (80°C)</span>
+            <label class="switch">
+                <input type="checkbox" id="protToggle" checked>
+                <span class="slider-toggle"></span>
+            </label>
+        </div>
+    </div>
+
+    <div id="safetyAlert" class="alert-box">
+        <div>🚨 PROTECCIÓN TÉRMICA ACTIVA 🚨</div>
+        <div>Sistema en enfriamiento...</div>
+        <div class="countdown" id="cooldownTimer"></div>
+    </div>
+
+    <div class="motor-visual">
+        <div class="motor-container">
+            <div id="fanBlade" class="fan"></div>
+            <div class="motor-center"></div>
+        </div>
+        <div class="motor-label">
+            <span id="motorStatus" class="status-indicator"></span>
+            <span id="motorStatusText">Motor Detenido</span>
+        </div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text">
+            <span>⚙️ RPM Motor (x₁)</span> 
+            <span id="rpmText" style="color: #28a745;">0 RPM</span>
+        </div>
+        <div class="bar-bg">
+            <div id="rpmBar" class="bar-fill rpm-bar"></div>
+        </div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text">
+            <span>🌡️ Temperatura (x₂)</span> 
+            <span id="tempText" style="color: #ffc107;">20°C</span>
+        </div>
+        <div class="bar-bg">
+            <div id="tempBar" class="bar-fill temp-bar"></div>
+        </div>
+    </div>
+
+    <div class="gauge-container">
+        <div class="status-text"><span>Humedad de los ultimos dias</span></div>
+        <canvas id="thingspeakChart" width="400" height="180"></canvas>
+        <button id="addChartBtn" class="btn-add-chart">➕ Agregar gráfico de ThingSpeak</button>
+        <div id="extraCharts"></div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
