@@ -3,99 +3,693 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemelo Digital: Sistema de Riego</title>
+    <title>Plataforma de Simulación: Riego IoT</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div class="dashboard">
-    <h1><span>💧</span> Sistema de Riego Inteligente</h1>
+    <section id="landing-page" class="view-section active">
+        <header class="hero">
+            <div class="hero-content">
+                <h1>💧 Sistema de Riego Inteligente</h1>
+                <p>Plataforma Integral de Validación, Control y Telemetría</p>
+            </div>
+        </header>
 
-    <div class="button-group">
-        <button id="demoBtn" class="btn btn-demo"><span>▶️</span> Iniciar Demo</button>
-        <button id="resetBtn" class="btn btn-reset"><span>🔄</span> Resetear</button>
-    </div>
+        <div class="container">
+            <h2 class="category-title">🚀 Módulos de Simulación</h2>
+            <div class="cards-wrapper">
+                <div class="card sim-card" onclick="openSimulation('ideal')">
+                    <div class="icon">📐</div>
+                    <h3>Modelo Teórico</h3>
+                    <p>Lazo de control basado en ecuaciones ideales (B=20).</p>
+                    <button class="btn-launch">Iniciar Ideal</button>
+                </div>
+                <div class="card sim-card" onclick="openSimulation('real')">
+                    <div class="icon">⚙️</div>
+                    <h3>Modelo Calibrado</h3>
+                    <p>Ajustado a la planta física real (Motor 624 RPM, B=18.66).</p>
+                    <button class="btn-launch">Iniciar Real</button>
+                </div>
+            </div>
 
-    <div id="demoStatus" class="demo-status">
-        <div id="demoMessage">Preparando demostración...</div>
-    </div>
+            <h2 class="category-title">📊 Ingeniería y Datos</h2>
+            <div class="cards-wrapper">
+                <div class="card data-card" onclick="openView('iot-dashboard')">
+                    <div class="icon">☁️</div>
+                    <h3>Telemetría IoT</h3>
+                    <p>Monitor de variables en tiempo real vía ThingSpeak API.</p>
+                    <button class="btn-launch btn-iot">Abrir Dashboard IoT</button>
+                </div>
+                
+                <div class="card data-card" onclick="openView('matlab-view')">
+                    <div class="icon">🧮</div>
+                    <h3>Análisis Matlab</h3>
+                    <p>Código fuente, diagramas de polos y respuesta al escalón.</p>
+                    <button class="btn-launch btn-matlab">Ver Matlab</button>
+                </div>
 
-    <div id="demoEndOverlay" class="overlay">
-        <h2>✨ Demo Completada</h2>
-        <p>Sistema estabilizado al 100% de humedad.</p>
-        <p style="font-size: 0.9rem; margin-top:-15px;">(Física pausada para análisis)</p>
-        <button id="exitDemoBtn" class="btn-exit">Volver al Panel</button>
-    </div>
+                <div class="card data-card" onclick="openView('python-view')">
+                    <div class="icon">🐍</div>
+                    <h3>Validación Python</h3>
+                    <p>Comparativa gráfica entre modelo teórico y real.</p>
+                    <button class="btn-launch btn-python">Ver Python</button>
+                </div>
 
-    <div id="manualControl" class="control-group">
-        <label>
-            🌱 Humedad del Suelo (%): 
-            <span id="humVal" class="value-display">50%</span>
-        </label>
-        <input type="range" id="humSlider" min="0" max="100" value="50">
+                <div class="card doc-card" onclick="openView('report-view')">
+                    <div class="icon">📄</div>
+                    <h3>Informe Técnico</h3>
+                    <p>Documentación completa del proyecto y justificación.</p>
+                    <button class="btn-launch btn-doc">Leer Informe</button>
+                </div>
+            </div>
+        </div>
+        <footer><p>Proyecto Tecnologías para la Automatización 2025</p>
+        <p>Alejo Carobolante - Julian Cadenas</p></footer>
+    </section>
+
+    <section id="app-dashboard" class="view-section">
+        <div class="dashboard-content">
+            <button class="btn-back" onclick="goHome()">⬅ Menú Principal</button>
+            <div class="dashboard-header">
+                <h1 id="simTitle"><span>💧</span> Panel de Control</h1>
+                <p id="simSubtitle" class="subtitle">Modo Cargado</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="col-left">
+                    <h3 class="panel-title">🎛️ Comandos</h3>
+                    <div class="button-group">
+                        <button id="demoBtn" class="btn btn-demo"><span>▶️</span> Demo</button>
+                        <button id="resetBtn" class="btn btn-reset"><span>🔄</span> Reset</button>
+                    </div>
+                    <div id="demoStatus" class="demo-status"><div id="demoMessage">...</div></div>
+                    <div id="manualControl" class="control-group">
+                        <label>🌱 Humedad Suelo: <span id="humVal" class="value-display">50%</span></label>
+                        <input type="range" id="humSlider" min="0" max="100" value="50">
+                        <div class="volt-display"><span>⚡ Voltaje (u):</span><span id="voltVal" style="color:#667eea;font-weight:bold;">2.50 V</span></div>
+                        <div class="toggle-row">
+                            <span style="font-weight:600;color:#495057;">🛡️ Prot. Térmica (80°C)</span>
+                            <label class="switch"><input type="checkbox" id="protToggle" checked><span class="slider-toggle"></span></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-right">
+                    <h3 class="panel-title">📊 Planta Física</h3>
+                    <div id="safetyAlert" class="alert-box"><div>🚨 ALERTA TÉRMICA</div><div class="countdown" id="cooldownTimer"></div></div>
+                    <div class="visuals-wrapper">
+                        <div class="motor-visual">
+                            <div class="motor-container"><div id="fanBlade" class="fan"></div><div class="motor-center"></div></div>
+                            <div class="motor-label"><span id="motorStatus" class="status-indicator"></span><span id="motorStatusText">Detenido</span></div>
+                        </div>
+                        <div class="gauges-wrapper">
+                            <div class="gauge-container">
+                                <div class="status-text"><span>⚙️ RPM (x₁)</span> <span id="rpmText">0</span></div>
+                                <div class="bar-bg"><div id="rpmBar" class="bar-fill rpm-bar"></div></div>
+                            </div>
+                            <div class="gauge-container">
+                                <div class="status-text"><span>🌡️ Temp (x₂)</span> <span id="tempText">20°C</span></div>
+                                <div class="bar-bg"><div id="tempBar" class="bar-fill temp-bar"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="demoEndOverlay" class="overlay">
+                <h2>✨ Fin de Demo</h2>
+                <button id="exitDemoBtn" class="btn-exit">Continuar</button>
+            </div>
+        </div>
+    </section>
+
+<section id="iot-dashboard" class="view-section">
+        <div class="dashboard-content full-width">
+            <button class="btn-back" onclick="goHome()">⬅ Menú Principal</button>
+            
+            <div class="dashboard-header">
+                <h1>☁️ Monitor IoT (ThingSpeak)</h1>
+                <p class="subtitle">Comparativa en tiempo real: Datos Ideales vs. Reales</p>
+            </div>
+
+            <div class="iot-split-container">
+                
+                <div class="iot-column" id="iotPanelIdeal">
+                    <div class="iot-col-header">
+                        <h3>📐 Canal Modelo Ideal</h3>
+                        <span class="status-badge">Cargando...</span>
+                    </div>
+                    <div class="field-buttons-area"></div>
+                    <div class="charts-stack"></div>
+                </div>
+
+                <div class="iot-column" id="iotPanelReal">
+                    <div class="iot-col-header">
+                        <h3>⚙️ Canal Modelo Real</h3>
+                        <span class="status-badge">Cargando...</span>
+                    </div>
+                    <div class="field-buttons-area"></div>
+                    <div class="charts-stack"></div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <section id="matlab-view" class="view-section">
+        <div class="dashboard-content full-width">
+            <button class="btn-back" onclick="goHome()">⬅ Menú Principal</button>
+            <div class="dashboard-header">
+                <h1>🧮 Ingeniería de Control (Matlab)</h1>
+                <p class="subtitle">Diseño del controlador y análisis de estabilidad</p>
+            </div>
+
+            <details class="analysis-details">
+                <summary>📜 Ver Código Fuente: riego3_ideal.m</summary>
+                <div class="analysis-content">
+                    <div class="code-container">
+                        <div class="code-header">📄 riego3_ideal.m</div>
+                        <pre><code class="language-matlab">
+clearvars; close all; clc;
+
+a = 0.5;        % amortiguamiento RPM (1/s)
+b = 20.0;       % ganancia por volt (RPM/V)
+c = 0.02;       % generación de calor por RPM (°C/(RPM·s))
+d = 0.05;       % disipación térmica (1/s)
+T_amb = 20.0;   % temperatura ambiente (°C)
+
+A = [-a, 0;
+      c, -d];
+B = [b; 0];
+
+f = [0; d*T_amb];
+
+disp("Matrices del modelo:");
+A, B
+
+%  lectura del txt
+usar_datos_reales = true/false;
+archivo = 'datos.txt';
+
+if usar_datos_reales
+    fid = fopen(archivo, 'r');
+    if fid < 0, error('No se pudo abrir el txt'); end
+
+    humedad_real = [];
+    volt_real = [];
+    rpm_real = [];
+    temp_real = [];
+
+    while ~feof(fid)
+        linea = fgetl(fid);
+        if ~ischar(linea), break; end
+
+        tok_h = regexp(linea, 'Hum:\s*(\d+)%', 'tokens');
+        tok_u = regexp(linea, 'u:\s*([\d\.]+)V', 'tokens');
+        tok_r = regexp(linea, 'RPM:\s*(\d+)', 'tokens');
+        tok_t = regexp(linea, 'Temp:\s*(\d+)C', 'tokens');
+
+        if ~isempty(tok_h)
+            humedad_real(end+1) = str2double(tok_h{1}{1});
+            volt_real(end+1)    = str2double(tok_u{1}{1});
+            rpm_real(end+1)     = str2double(tok_r{1}{1});
+            temp_real(end+1)    = str2double(tok_t{1}{1});
+        end
+    end
+
+    fclose(fid);
+
+    fprintf('\nArchivo cargado correctamente.\n');
+    fprintf('Total de muestras: %d\n', length(humedad_real));
+end
+
+%  puntos de equilibrio
+
+u0 = 0;
+u3 = 3; 
+u5 = 5;
+
+xeq0 = -A \ (B*u0 + f);   % equilibrio con u = 0
+xeq3 = -A \ (B*u3 + f);   % equilibrio con u = 3V 
+xeq5 = -A \ (B*u5 + f);   % equilibrio con u = 5V
+
+disp("Equilibrio u = 0 V:");
+xeq0
+disp("Equilibrio u = 3 V:"); 
+xeq3
+disp("Equilibrio u = 5 V:");
+xeq5
+
+%  calculos plano de fase
+% Malla
+rpm_max = max(220, xeq5(1) * 1.2);
+temp_max = max(T_amb + 60, xeq5(2) * 1.2);
+
+rpm_vals  = linspace(0, rpm_max, 28);
+temp_vals = linspace(max(5, T_amb-10), temp_max, 28);
+[R, TT] = meshgrid(rpm_vals, temp_vals);
+
+Xmat = [R(:)'; TT(:)'];
+
+% Campo para u = 0
+F0 = A * Xmat + B*u0 + f;
+U0 = reshape(F0(1,:), size(R));
+V0 = reshape(F0(2,:), size(R));
+
+% Campo para u = 3  
+F3 = A * Xmat + B*u3 + f;
+U3 = reshape(F3(1,:), size(R));
+V3 = reshape(F3(2,:), size(R));
+
+% Campo para u = 5
+F5 = A * Xmat + B*u5 + f;
+U5 = reshape(F5(1,:), size(R));
+V5 = reshape(F5(2,:), size(R));
+
+%% TRAYECTORIAS SIMULADAS (ODE45)
+tspan = [0 200];
+ICs = [0  T_amb;
+       20 T_amb+5;
+       80 T_amb+15;
+       150 T_amb+20]';
+
+rhs0 = @(t,x) A*x + B*u0 + f;
+rhs3 = @(t,x) A*x + B*u3 + f; 
+rhs5 = @(t,x) A*x + B*u5 + f;
+
+Traj0 = cell(1,size(ICs,2));
+Traj3 = cell(1,size(ICs,2)); 
+Traj5 = cell(1,size(ICs,2));
+
+for k=1:size(ICs,2)
+    [~, X0] = ode45(rhs0, tspan, ICs(:,k));
+    [~, X3] = ode45(rhs3, tspan, ICs(:,k)); 
+    [~, X5] = ode45(rhs5, tspan, ICs(:,k));
+    
+    Traj0{k} = X0;
+    Traj3{k} = X3; 
+    Traj5{k} = X5;
+end
+
+%  gráfico plano de fase
+figure('Position',[50 100 1400 480]); % Hice la figura un poco más ancha
+
+% u = 0V
+subplot(1,3,1); %esta es la posición del gráfico en el subplot
+quiver(R,TT,U0,V0,'k'); hold on;
+for k=1:numel(Traj0)
+    plot(Traj0{k}(:,1),Traj0{k}(:,2),'b','LineWidth',1.5);
+end
+plot(xeq0(1), xeq0(2), 'go','MarkerFaceColor','g','MarkerSize',8);
+title("Campo de Fase – u = 0 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+% u = 3V 
+subplot(1,3,2); % Posición 2 (al medio)
+quiver(R,TT,U3,V3,'k'); hold on;
+for k=1:numel(Traj3)
+    plot(Traj3{k}(:,1),Traj3{k}(:,2),'m','LineWidth',1.5); 
+end
+plot(xeq3(1), xeq3(2), 'mo','MarkerFaceColor','m','MarkerSize',8);
+title("Campo de Fase – u = 3 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+% u = 5V 
+subplot(1,3,3);
+quiver(R,TT,U5,V5,'k'); hold on;
+for k=1:numel(Traj5)
+    plot(Traj5{k}(:,1),Traj5{k}(:,2),'r','LineWidth',1.5);
+end
+plot(xeq5(1), xeq5(2), 'ro','MarkerFaceColor','r','MarkerSize',8);
+title("Campo de Fase – u = 5 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+suptitle('Planos de Fase del Modelo en Espacio de Estados');
+
+%  envio a thingspeak
+enviarThingSpeak = true; 
+WRITE_API_KEY = 'IDIUYGSNM7BHQSLP';
+
+if enviarThingSpeak
+    if isempty(humedad_real)
+        error('No hay datos cargados.');
+    end
+
+    fprintf("\nEnviando %d muestras a ThingSpeak...\n", length(humedad_real));
+
+    for k = 1:length(humedad_real)
         
-        <div class="volt-display">
-            <span>⚡ Voltaje Control (u):</span>
-            <span id="voltVal" style="color: #667eea; font-weight: bold;">2.5 V</span>
+        hum = humedad_real(k);
+        u   = volt_real(k);
+        rpm = rpm_real(k);
+        temp = temp_real(k);
+
+        url = sprintf("https://api.thingspeak.com/update?api_key=%s&field1=%.2f&field2=%.2f&field3=%.2f&field4=%d", ...
+                      WRITE_API_KEY, rpm, temp, u, hum);
+
+        try
+            webread(url);
+            fprintf("OK [%d/%d]  RPM %.1f | Temp %.1f | u %.2fV | Hum %d%%\n", ...
+                    k, length(humedad_real), rpm, temp, u, hum);
+        catch
+            warning("Fallo en envío.");
+        end
+
+        pause(16); 
+    end
+
+    fprintf("\n*** Envío finalizado ***\n");
+end
+                        </code></pre>
+                    </div>
+                </div>
+            </details>
+            
+
+            <div class="analysis-grid" style="margin-top: 40px;">
+                <div class="img-container">
+                    <h4>Respuesta Ideal</h4>
+                    <img src="matlab_graph_ideal.png" alt="Gráfico Matlab 1" class="analysis-img">
+                </div>
+            </div>
+                        <details class="analysis-details">
+                <summary>📜 Ver Código Fuente: riego3_real.m</summary>
+                <div class="analysis-content">
+                    <div class="code-container">
+                        <div class="code-header">📄 riego3_real.m</div>
+                        <pre><code class="language-matlab">
+clearvars; close all; clc;
+
+a = 0.5;        % amortiguamiento RPM (1/s)
+b = 18.66;       % ganancia por volt (RPM/V)
+c = 0.02;       % generación de calor por RPM (°C/(RPM·s))
+d = 0.05;       % disipación térmica (1/s)
+T_amb = 20.0;   % temperatura ambiente (°C)
+
+A = [-a, 0;
+      c, -d];
+B = [b; 0];
+
+f = [0; d*T_amb];
+
+disp("Matrices del modelo:");
+A, B
+
+%  lectura del txt
+usar_datos_reales = true/false;
+archivo = 'datos.txt';
+
+if usar_datos_reales
+    fid = fopen(archivo, 'r');
+    if fid < 0, error('No se pudo abrir el txt'); end
+
+    humedad_real = [];
+    volt_real = [];
+    rpm_real = [];
+    temp_real = [];
+
+    while ~feof(fid)
+        linea = fgetl(fid);
+        if ~ischar(linea), break; end
+
+        tok_h = regexp(linea, 'Hum:\s*(\d+)%', 'tokens');
+        tok_u = regexp(linea, 'u:\s*([\d\.]+)V', 'tokens');
+        tok_r = regexp(linea, 'RPM:\s*(\d+)', 'tokens');
+        tok_t = regexp(linea, 'Temp:\s*(\d+)C', 'tokens');
+
+        if ~isempty(tok_h)
+            humedad_real(end+1) = str2double(tok_h{1}{1});
+            volt_real(end+1)    = str2double(tok_u{1}{1});
+            rpm_real(end+1)     = str2double(tok_r{1}{1});
+            temp_real(end+1)    = str2double(tok_t{1}{1});
+        end
+    end
+
+    fclose(fid);
+
+    fprintf('\nArchivo cargado correctamente.\n');
+    fprintf('Total de muestras: %d\n', length(humedad_real));
+end
+
+%  puntos de equilibrio
+
+u0 = 0;
+u3 = 3; 
+u5 = 5;
+
+xeq0 = -A \ (B*u0 + f);   % equilibrio con u = 0
+xeq3 = -A \ (B*u3 + f);   % equilibrio con u = 3V 
+xeq5 = -A \ (B*u5 + f);   % equilibrio con u = 5V
+
+disp("Equilibrio u = 0 V:");
+xeq0
+disp("Equilibrio u = 3 V:"); 
+xeq3
+disp("Equilibrio u = 5 V:");
+xeq5
+
+%  calculos plano de fase
+% Malla
+rpm_max = max(220, xeq5(1) * 1.2);
+temp_max = max(T_amb + 60, xeq5(2) * 1.2);
+
+rpm_vals  = linspace(0, rpm_max, 28);
+temp_vals = linspace(max(5, T_amb-10), temp_max, 28);
+[R, TT] = meshgrid(rpm_vals, temp_vals);
+
+Xmat = [R(:)'; TT(:)'];
+
+% Campo para u = 0
+F0 = A * Xmat + B*u0 + f;
+U0 = reshape(F0(1,:), size(R));
+V0 = reshape(F0(2,:), size(R));
+
+% Campo para u = 3  
+F3 = A * Xmat + B*u3 + f;
+U3 = reshape(F3(1,:), size(R));
+V3 = reshape(F3(2,:), size(R));
+
+% Campo para u = 5
+F5 = A * Xmat + B*u5 + f;
+U5 = reshape(F5(1,:), size(R));
+V5 = reshape(F5(2,:), size(R));
+
+%% TRAYECTORIAS SIMULADAS (ODE45)
+tspan = [0 200];
+ICs = [0  T_amb;
+       20 T_amb+5;
+       80 T_amb+15;
+       150 T_amb+20]';
+
+rhs0 = @(t,x) A*x + B*u0 + f;
+rhs3 = @(t,x) A*x + B*u3 + f; 
+rhs5 = @(t,x) A*x + B*u5 + f;
+
+Traj0 = cell(1,size(ICs,2));
+Traj3 = cell(1,size(ICs,2)); 
+Traj5 = cell(1,size(ICs,2));
+
+for k=1:size(ICs,2)
+    [~, X0] = ode45(rhs0, tspan, ICs(:,k));
+    [~, X3] = ode45(rhs3, tspan, ICs(:,k)); 
+    [~, X5] = ode45(rhs5, tspan, ICs(:,k));
+    
+    Traj0{k} = X0;
+    Traj3{k} = X3; 
+    Traj5{k} = X5;
+end
+
+%  gráfico plano de fase
+figure('Position',[50 100 1400 480]); % Hice la figura un poco más ancha
+
+% u = 0V
+subplot(1,3,1); %esta es la posición del gráfico en el subplot
+quiver(R,TT,U0,V0,'k'); hold on;
+for k=1:numel(Traj0)
+    plot(Traj0{k}(:,1),Traj0{k}(:,2),'b','LineWidth',1.5);
+end
+plot(xeq0(1), xeq0(2), 'go','MarkerFaceColor','g','MarkerSize',8);
+title("Campo de Fase – u = 0 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+% u = 3V 
+subplot(1,3,2); % Posición 2 (al medio)
+quiver(R,TT,U3,V3,'k'); hold on;
+for k=1:numel(Traj3)
+    plot(Traj3{k}(:,1),Traj3{k}(:,2),'m','LineWidth',1.5); 
+end
+plot(xeq3(1), xeq3(2), 'mo','MarkerFaceColor','m','MarkerSize',8);
+title("Campo de Fase – u = 3 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+% u = 5V 
+subplot(1,3,3);
+quiver(R,TT,U5,V5,'k'); hold on;
+for k=1:numel(Traj5)
+    plot(Traj5{k}(:,1),Traj5{k}(:,2),'r','LineWidth',1.5);
+end
+plot(xeq5(1), xeq5(2), 'ro','MarkerFaceColor','r','MarkerSize',8);
+title("Campo de Fase – u = 5 V");
+xlabel("RPM"); ylabel("Temperatura (°C)");
+grid on;
+
+suptitle('Planos de Fase del Modelo en Espacio de Estados');
+
+%  envio a thingspeak
+enviarThingSpeak = true; 
+WRITE_API_KEY = 'IDIUYGSNM7BHQSLP';
+
+if enviarThingSpeak
+    if isempty(humedad_real)
+        error('No hay datos cargados.');
+    end
+
+    fprintf("\nEnviando %d muestras a ThingSpeak...\n", length(humedad_real));
+
+    for k = 1:length(humedad_real)
+        
+        hum = humedad_real(k);
+        u   = volt_real(k);
+        rpm = rpm_real(k);
+        temp = temp_real(k);
+
+        url = sprintf("https://api.thingspeak.com/update?api_key=%s&field1=%.2f&field2=%.2f&field3=%.2f&field4=%d", ...
+                      WRITE_API_KEY, rpm, temp, u, hum);
+
+        try
+            webread(url);
+            fprintf("OK [%d/%d]  RPM %.1f | Temp %.1f | u %.2fV | Hum %d%%\n", ...
+                    k, length(humedad_real), rpm, temp, u, hum);
+        catch
+            warning("Fallo en envío.");
+        end
+
+        pause(16); 
+    end
+
+    fprintf("\n*** Envío finalizado ***\n");
+end
+                        </code></pre>
+                    </div>
+                </div>
+            </details>
+            
+            <div class="analysis-grid" style="margin-top: 40px;">
+                <div class="img-container">
+                    <h4>Respuesta Real</h4>
+                    <img src="matlab_graph_real.png" alt="Gráfico Matlab 1" class="analysis-img">
+                </div>
+            </div>
         </div>
+    </section>
 
-        <div class="toggle-row">
-            <span style="font-weight:600; color:#495057; font-size:0.95rem;">🛡️ Protección Térmica (80°C)</span>
-            <label class="switch">
-                <input type="checkbox" id="protToggle" checked>
-                <span class="slider-toggle"></span>
-            </label>
+    <section id="python-view" class="view-section">
+        <div class="dashboard-content full-width">
+            <button class="btn-back" onclick="goHome()">⬅ Menú Principal</button>
+            <div class="dashboard-header">
+                <h1>🐍 Validación Experimental (Python)</h1>
+                <p class="subtitle">Comparativa gráfica entre modelo teórico y mediciones reales</p>
+            </div>
+
+            <details class="analysis-details">
+                <summary>📜 Ver Código Fuente: graph.py</summary>
+                <div class="analysis-content">
+                    <div class="code-container">
+                        <div class="code-header">🐍 graph.py</div>
+                        <pre><code class="language-python">
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Datos
+voltaje = np.linspace(0, 5, 100)
+# Modelo teórico original: RPM = 40 * V
+rpm_teorico = 40 * voltaje
+
+# Configuraciones del motor Tinkercad (valores aproximados)
+# Caso 1: Configuración 416 (Relación 1.36 : 1)
+rpm_416 = rpm_teorico / 1.36
+
+# Caso 2: Configuración 520 (Relación 1.08 : 1)
+rpm_520 = rpm_teorico / 1.08
+
+# Caso 3: Configuración 624 (Relación 1.07 : 1)
+rpm_624 = rpm_teorico / 1.07
+
+# Caso 4: Configuración 730 (Relación 1.267 : 1, más rápido que el teórico)
+rpm_730 = rpm_teorico * 1.267
+
+# Gráfico
+plt.figure(figsize=(12, 7))
+
+# Línea base teórica
+plt.plot(voltaje, rpm_teorico, label='Modelo Teórico (Ideal)', color='black', linestyle='--', linewidth=2)
+
+# Líneas reales para cada configuración
+plt.plot(voltaje, rpm_416, label='Motor Config 416 (Real)', color='red', linewidth=2)
+plt.plot(voltaje, rpm_520, label='Motor Config 520 (Real)', color='green', linewidth=2)
+plt.plot(voltaje, rpm_624, label='Motor Config 624 (Real)', color='blue', linewidth=2)
+plt.plot(voltaje, rpm_730, label='Motor Config 730 (Real)', color='purple', linewidth=2)
+
+# Decoración
+plt.title('Comparativa de Configuraciones de Motor vs. Modelo Teórico', fontsize=16)
+plt.xlabel('Voltaje de Entrada (V)', fontsize=12)
+plt.ylabel('Velocidad Angular (RPM)', fontsize=12)
+plt.grid(True, which='both', linestyle='--', alpha=0.7)
+plt.legend(fontsize=12)
+plt.xlim(0, 5)
+plt.ylim(0, 260) # Ajustado para que quepa la curva de 730
+
+# Anotaciones
+plt.annotate('Mayor discrepancia\n(Error ~36%)', xy=(4.8, rpm_416[-1]), xytext=(3.5, 120),
+             arrowprops=dict(facecolor='red', shrink=0.05))
+
+plt.annotate('Mejor ajuste\n(Error ~7-8%)', xy=(4.8, rpm_624[-1]), xytext=(3.5, 180),
+             arrowprops=dict(facecolor='blue', shrink=0.05))
+
+plt.savefig('comparativa_configuraciones_motor.png')
+plt.show()
+                        </code></pre>
+                    </div>
+                </div>
+            </details>
+
+            <div class="analysis-grid" style="margin-top: 40px; display:flex; justify-content:center;">
+                <div class="img-container" style="max-width: 900px; width: 100%;">
+                    <h4>Resultado de la Validación</h4>
+                    <img src="comparativa_configuraciones_motor.png" alt="Gráfico Python" class="analysis-img">
+                    <span class="img-caption">Fig 1. Comparativa de respuesta: Modelo vs. Motores Tinkercad</span>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <div id="safetyAlert" class="alert-box">
-        <div>🚨 PROTECCIÓN TÉRMICA ACTIVA 🚨</div>
-        <div>Sistema en enfriamiento...</div>
-        <div class="countdown" id="cooldownTimer"></div>
-    </div>
-
-    <div class="motor-visual">
-        <div class="motor-container">
-            <div id="fanBlade" class="fan"></div>
-            <div class="motor-center"></div>
+    <section id="report-view" class="view-section">
+        <div class="dashboard-content full-width" style="height: 90vh; display: flex; flex-direction: column;">
+            <button class="btn-back" onclick="goHome()" style="align-self: flex-start; margin-bottom: 20px; position:relative; top:0; left:0;">⬅ Menú Principal</button>
+            <div class="pdf-container" style="flex:1; width:100%;">
+                <object data="informe.pdf" type="application/pdf" width="100%" height="100%">
+                    <div class="pdf-fallback">
+                        <p>Tu navegador no soporta PDF integrado.</p>
+                        <a href="informe.pdf" class="btn-download">Descargar Informe</a>
+                    </div>
+                </object>
+            </div>
         </div>
-        <div class="motor-label">
-            <span id="motorStatus" class="status-indicator"></span>
-            <span id="motorStatusText">Motor Detenido</span>
-        </div>
-    </div>
+    </section>
 
-    <div class="gauge-container">
-        <div class="status-text">
-            <span>⚙️ RPM Motor (x₁)</span> 
-            <span id="rpmText" style="color: #28a745;">0 RPM</span>
-        </div>
-        <div class="bar-bg">
-            <div id="rpmBar" class="bar-fill rpm-bar"></div>
-        </div>
-    </div>
-
-    <div class="gauge-container">
-        <div class="status-text">
-            <span>🌡️ Temperatura (x₂)</span> 
-            <span id="tempText" style="color: #ffc107;">20°C</span>
-        </div>
-        <div class="bar-bg">
-            <div id="tempBar" class="bar-fill temp-bar"></div>
-        </div>
-    </div>
-
-    <div class="gauge-container">
-        <div class="status-text"><span>Humedad de los ultimos dias</span></div>
-        <canvas id="thingspeakChart" width="400" height="180"></canvas>
-        <button id="addChartBtn" class="btn-add-chart">➕ Agregar gráfico de ThingSpeak</button>
-        <div id="extraCharts"></div>
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="script.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="simulation.js"></script>
+    <script src="iot.js"></script>
+    <script src="main.js"></script>
+    <script src="simulation_ideal.js"></script>
+    <script src="simulation_real.js"></script>
 </body>
 </html>
