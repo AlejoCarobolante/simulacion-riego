@@ -1,107 +1,120 @@
 class IdealSimulation {
     constructor() {
-        // --- 1. PARÁMETROS FÍSICOS (MODELO IDEAL) ---
-        // Definición de Matrices de Estado
-        // x1' = -alpha*x1 + beta*u
-        this.alpha = 0.5;   // Fricción
-        this.beta = 20.0;   // Ganancia Teórica (Diseño)
-        
-        // x2' = k1*x1 - k2*x1 - gamma*(x2 - Tamb)
-        this.k1 = 0.05;     // Gen. Calor
-        this.k2 = 0.03;     // Refrig. Agua
-        this.gamma = 0.05;  // Disipación
-        this.dt = 0.1;      // Paso de integración (100ms)
+        // --- PARÁMETROS FÍSICOS (IDEAL) ---
+        this.alpha = 0.5;   
+        this.beta = 20.0;   
+        this.k1 = 0.05;     
+        this.k2 = 0.03;     
+        this.gamma = 0.05;  
+        this.dt = 0.1;      
 
-        // --- 2. VARIABLES DE ESTADO ---
-        this.x_rpm = 0;     // Estado x1
-        this.x_temp = 20.0; // Estado x2
-        this.humidity = 50; // Entrada (Perturbación/Sensor)
+        // --- ESTADO ---
+        this.x_rpm = 0;
+        this.x_temp = 20.0;
+        this.humidity = 50;
 
-        // --- 3. CONFIGURACIÓN DE LA DEMO (ALGORÍTMICA) ---
+        // --- PROTECCIÓN TÉRMICA (Agregada para consistencia) ---
+        this.isCooling = false;
+        this.coolStartTime = 0;
+        this.TEMP_CRITICA = 80;
+        this.COOL_TIME = 3000;
+
+        // --- DEMO ---
         this.demoActive = false;
         this.demoStartTime = 0;
-        this.DEMO_DURATION = 12000; // 12 segundos para ir de 0 a 100%
+        this.DEMO_DURATION = 12000;
     }
 
     reset() {
         this.x_rpm = 0;
         this.x_temp = 20.0;
         this.humidity = 50;
+        this.isCooling = false;
         this.stopDemo();
     }
 
     startDemo() {
         this.demoActive = true;
         this.demoStartTime = Date.now();
-        return "▶️ Iniciando secuencia de carga...";
+        return "▶️ Iniciando secuencia ideal...";
     }
 
     stopDemo() {
         this.demoActive = false;
     }
 
-    // --- 4. BUCLE DE CÁLCULO FÍSICO ---
     update(manualHumidity, protectionEnabled) {
         let currentHum = manualHumidity;
         let demoMessage = "";
         let demoFinished = false;
 
-        // A. GENERACIÓN DE ENTRADA (Input Generator)
+        // 1. Input Demo
         if (this.demoActive) {
-            // Calculamos el tiempo transcurrido
             const elapsed = Date.now() - this.demoStartTime;
-            
-            // FÓRMULA DE RAMPA: H(t) = (t / T_total) * 100
-            // Esto simula físicamente la saturación progresiva del suelo
             let progress = elapsed / this.DEMO_DURATION;
+            if (progress > 1) progress = 1;
             
-            if (progress > 1) progress = 1; // Saturación al 100%
-
+            // Rampa Lineal Ideal
             currentHum = Math.round(progress * 100);
 
-            // Generación dinámica de mensajes según el estado de la variable
-            if (currentHum < 5) demoMessage = "🌱 Inicio: Suelo Seco (0%)";
-            else if (currentHum < 40) demoMessage = "💧 Riego Inicial (Caudal Máximo)";
-            else if (currentHum < 80) demoMessage = "🌊 Aumentando Saturación...";
-            else if (currentHum < 100) demoMessage = "✅ Llegando a capacidad de campo";
-            else demoMessage = "✨ Objetivo Alcanzado (100%)";
+            if (currentHum < 10) demoMessage = "🌱 Inicio (0%)";
+            else if (currentHum < 50) demoMessage = "💧 Riego Activo";
+            else if (currentHum < 90) demoMessage = "🌊 Saturación";
+            else demoMessage = "✨ Objetivo (100%)";
 
-            // Finalizar si completamos el tiempo + 1 segundo de espera
             if (elapsed > this.DEMO_DURATION + 1000) {
                 demoFinished = true;
                 this.stopDemo();
             }
-            
-            this.humidity = currentHum; // Actualizar variable interna
+            this.humidity = currentHum;
         } else {
             this.humidity = manualHumidity;
         }
 
-        // B. CONTROLADOR (Lazo Cerrado Proporcional)
-        // u(t) = Kp * e(t)  donde e(t) = (Ref - Humedad)
-        let error = (100.0 - currentHum) / 100.0;
-        let u = 5.0 * error; 
-        
-        // Saturación del actuador (0V a 5V)
-        u = Math.max(0, Math.min(u, 5.0));
+        // 2. Protección Térmica (Lógica Prioritaria)
+        // Si superamos 80 grados, CORTAMOS TODO.
+        if (protectionEnabled && !this.isCooling && this.x_temp >= this.TEMP_CRITICA) {
+            this.isCooling = true;
+            this.coolStartTime = Date.now();
+        }
 
-        // C. SOLUCIÓN NUMÉRICA DE ECUACIONES (Método de Euler)
+        let u = 0;
         
-        // Ecuación 1: Mecánica (RPM)
-        let dx1 = -this.alpha * this.x_rpm + this.beta * u;
-        
-        // Ecuación 2: Termodinámica (Temperatura)
-        let dx2 = (this.k1 - this.k2) * this.x_rpm - this.gamma * (this.x_temp - 20);
+        if (this.isCooling) {
+            // MODO ENFRIAMIENTO: Ignoramos control
+            u = 0; 
+            
+            // Física: Solo disipación, sin generación de calor
+            // x2' = -gamma * (x2 - Tamb)
+            let dx2 = -this.gamma * (this.x_temp - 20);
+            this.x_temp += dx2 * this.dt;
+            
+            // x1' = -alpha * x1 (Frenado natural por fricción)
+            let dx1 = -this.alpha * this.x_rpm;
+            this.x_rpm += dx1 * this.dt;
 
-        // Integración: x(k+1) = x(k) + dx * dt
-        this.x_rpm += dx1 * this.dt;
-        this.x_temp += dx2 * this.dt;
+            // Salir del modo enfriamiento
+            if ((Date.now() - this.coolStartTime) > this.COOL_TIME) {
+                this.isCooling = false;
+            }
+        } else {
+            // MODO NORMAL: Control Activo
+            let error = (100.0 - currentHum) / 100.0;
+            u = 5.0 * error; 
+            u = Math.max(0, Math.min(u, 5.0));
 
-        // Restricciones Físicas (No existen RPM negativas ni Temp < Ambiente)
+            // Ecuaciones Diferenciales
+            let dx1 = -this.alpha * this.x_rpm + this.beta * u;
+            let dx2 = (this.k1 - this.k2) * this.x_rpm - this.gamma * (this.x_temp - 20);
+
+            this.x_rpm += dx1 * this.dt;
+            this.x_temp += dx2 * this.dt;
+        }
+
+        // Límites Físicos
         if (this.x_rpm < 0) this.x_rpm = 0;
         if (this.x_temp < 20) this.x_temp = 20;
 
-        // D. RETORNO DE TELEMETRÍA
         return {
             rpm: this.x_rpm,
             temp: this.x_temp,
@@ -109,7 +122,8 @@ class IdealSimulation {
             hum: currentHum,
             demoMsg: demoMessage,
             demoEnded: demoFinished,
-            isCooling: false // El modelo ideal no simula fallos térmicos
+            isCooling: this.isCooling,
+            coolTimeInfo: this.isCooling ? Math.ceil((this.COOL_TIME - (Date.now() - this.coolStartTime))/1000) : 0
         };
     }
 }
