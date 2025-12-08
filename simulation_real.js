@@ -116,8 +116,6 @@ class RealSimulation {
         }
 
         // Límites Físicos
-        // Nota: No limitamos RPM a 200 en la física para ver la convergencia real,
-        // pero sí evitamos negativos.
         if (this.x_rpm < 0) this.x_rpm = 0;
         if (this.x_temp < 20) this.x_temp = 20;
 

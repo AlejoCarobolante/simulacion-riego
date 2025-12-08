@@ -12,7 +12,7 @@
     <section id="landing-page" class="view-section active">
         <header class="hero">
             <div class="hero-content">
-                <h1>💧 Sistema de Riego Inteligente</h1>
+                <h1>Sistema de Riego Inteligente</h1>
                 <p>Plataforma Integral de Validación, Control y Telemetría</p>
             </div>
         </header>
@@ -63,10 +63,17 @@
                     <p>Documentación completa del proyecto y justificación.</p>
                     <button class="btn-launch btn-doc">Leer Informe</button>
                 </div>
+                <div class="card data-card" onclick="openView('tinkercad-view')">
+                    <div class="icon">🔌</div>
+                    <h3>Hardware (Tinkercad)</h3>
+                    <p>Esquemático interactivo y simulación del circuito electrónico.</p>
+                    <button class="btn-launch btn-tinker">Ver Circuito</button>
+                </div>
             </div>
         </div>
         <footer><p>Proyecto Tecnologías para la Automatización 2025</p>
-        <p>Alejo Carobolante - Julian Cadenas</p></footer>
+        <p>Alejo Carobolante - Julian Cadenas</p>
+        <p>4K09</p></footer>
     </section>
 
     <section id="app-dashboard" class="view-section">
@@ -680,6 +687,20 @@ plt.show()
                         <a href="informe.pdf" class="btn-download">Descargar Informe</a>
                     </div>
                 </object>
+            </div>
+        </div>
+    </section>
+    <section id="tinkercad-view" class="view-section">
+        <div class="dashboard-content full-width" style="height: 95vh; display: flex; flex-direction: column;">
+            <button class="btn-back" onclick="goHome()" style="align-self: flex-start; margin-bottom: 15px;">⬅ Menú Principal</button>
+            
+            <div class="dashboard-header" style="margin-bottom: 20px;">
+                <h1>🔌 Simulación de Hardware</h1>
+                <p class="subtitle">Interacción directa con el circuito Arduino en Tinkercad</p>
+            </div>
+
+            <div class="tinkercad-wrapper">
+                <iframe width="100%" height="100%" src="https://www.tinkercad.com/things/3Zcm2m7YZe3-global-sistema-de-riego-con-sensor-de-humedad" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
             </div>
         </div>
     </section>
