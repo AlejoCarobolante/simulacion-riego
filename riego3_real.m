@@ -17,7 +17,7 @@ A, B
 
 %  lectura del txt
 usar_datos_reales = true/false;
-archivo = 'datos.txt';
+archivo = 'datos_real.txt';
 
 if usar_datos_reales
     fid = fopen(archivo, 'r');
@@ -159,7 +159,7 @@ suptitle('Planos de Fase del Modelo en Espacio de Estados');
 
 %  envio a thingspeak
 enviarThingSpeak = true; 
-WRITE_API_KEY = 'IDIUYGSNM7BHQSLP';
+WRITE_API_KEY = 'RM41BR6RWPCTHQM5';
 
 if enviarThingSpeak
     if isempty(humedad_real)

@@ -1,22 +1,24 @@
 // ======================================================
-// CONFIGURACIÓN IOT (Solo Keys)
+// CONFIGURACIÓN IOT (TUS KEYS)
 // ======================================================
-const IDEAL_CONFIG = { ID: '3177048', KEY: 'DAZRG8GSL10W5AYJ' }; 
-const REAL_CONFIG  = { ID: '3177048', KEY: 'DAZRG8GSL10W5AYJ' }; 
+const IDEAL_CONFIG = { ID: '3195521', KEY: 'OV9AFAEO7QJ1BVG6' }; 
+const REAL_CONFIG  = { ID: '3195523', KEY: '051133SXBZUY8HGT' }; 
 
 // ======================================================
-// VARIABLES DE ESTADO UI
+// VARIABLES DE ESTADO Y MÓDULOS
 // ======================================================
-let activeSimulation = null; // Instancia de la clase (Ideal o Real)
+let activeSimulation = null;        // Instancia de la simulación activa
+const iotManager = new ThingSpeakManager(); // Instancia del gestor IoT
+
 let loopInterval = null;
 let rotation = 0;
 
 // ======================================================
-// SISTEMA DE NAVEGACIÓN Y CARGA
+// SISTEMA DE NAVEGACIÓN
 // ======================================================
 function hideAllViews() {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-    stopLoop();
+    stopLoop(); // Detener física al cambiar de pantalla
 }
 
 function goHome() {
@@ -28,12 +30,12 @@ function openSimulation(mode) {
     hideAllViews();
     document.getElementById('app-dashboard').classList.add('active');
     
-    // INSTANCIAR LA CLASE CORRESPONDIENTE (Aquí ocurre la magia)
+    // Instanciar la clase correcta según el botón
     if (mode === 'real') {
-        activeSimulation = new RealSimulation(); // Usa simulation_real.js
+        activeSimulation = new RealSimulation(); 
         setupUI('real');
     } else {
-        activeSimulation = new IdealSimulation(); // Usa simulation_ideal.js
+        activeSimulation = new IdealSimulation(); 
         setupUI('ideal');
     }
 
@@ -47,6 +49,7 @@ function setupUI(mode) {
     if (mode === 'real') {
         document.getElementById('simTitle').innerHTML = "<span>⚙️</span> Simulación Calibrada (Real)";
         document.getElementById('simSubtitle').innerText = "Parámetros ajustados al Motor 624 RPM (β = 18.66)";
+        // Mostrar sección Python solo en Real (si existe en tu HTML)
         if(analysisSection) analysisSection.style.display = 'block';
     } else {
         document.getElementById('simTitle').innerHTML = "<span>📐</span> Simulación Teórica (Ideal)";
@@ -59,9 +62,10 @@ function openView(viewId) {
     hideAllViews();
     document.getElementById(viewId).classList.add('active');
     
+    // Si entramos al dashboard IoT, iniciamos los paneles
     if (viewId === 'iot-dashboard') {
-        // initIoTPage() viene de iot.js (si lo mantienes separado)
-        if(typeof initIoTPage === 'function') initIoTPage();
+        iotManager.initPanel(IDEAL_CONFIG, 'iotPanelIdeal');
+        iotManager.initPanel(REAL_CONFIG, 'iotPanelReal');
     }
 }
 
@@ -70,7 +74,7 @@ function openView(viewId) {
 // ======================================================
 function startLoop() {
     if(loopInterval) clearInterval(loopInterval);
-    loopInterval = setInterval(uiUpdateLoop, 100);
+    loopInterval = setInterval(uiUpdateLoop, 100); // 10 FPS de actualización UI
 }
 
 function stopLoop() {
@@ -80,18 +84,17 @@ function stopLoop() {
 function uiUpdateLoop() {
     if(!activeSimulation) return;
 
-    // 1. Leer Controles UI
+    // 1. Leer Inputs
     const slider = document.getElementById('humSlider');
     const protToggle = document.getElementById('protToggle');
     const manualHum = parseInt(slider.value);
     
-    // 2. PEDIR A LA SIMULACIÓN QUE CALCULE EL SIGUIENTE PASO
-    // (Le pasamos los inputs y ella nos devuelve el estado completo)
+    // 2. Calcular Física (Delegar a la clase)
     const state = activeSimulation.update(manualHum, protToggle.checked);
 
-    // 3. Actualizar la UI con la respuesta de la simulación
+    // 3. Sincronizar UI con el Estado
     
-    // Sincronizar slider si estamos en demo
+    // Modo Demo: El slider se mueve solo
     if (activeSimulation.demoActive) {
         slider.value = state.hum;
         document.getElementById('demoStatus').style.display = 'block';
@@ -104,29 +107,30 @@ function uiUpdateLoop() {
         document.getElementById('humSlider').disabled = false;
     }
 
-    // Fin de demo
+    // Overlay Fin de Demo
     if (state.demoEnded) {
         document.getElementById('demoEndOverlay').style.display = 'flex';
     }
 
-    // Textos y Barras
+    // Valores Numéricos
     document.getElementById('humVal').innerText = Math.round(state.hum) + "%";
     document.getElementById('voltVal').innerText = state.volt.toFixed(2) + " V";
     document.getElementById('rpmText').innerText = Math.round(state.rpm);
     document.getElementById('tempText').innerText = Math.round(state.temp) + "°C";
 
+    // Barras de Progreso
     const rpmPct = (state.rpm / 200) * 100;
     const tempPct = Math.min(100, ((state.temp - 20) / 80) * 100);
     document.getElementById('rpmBar').style.width = rpmPct + "%";
     document.getElementById('tempBar').style.width = tempPct + "%";
 
-    // Colores Termómetro
+    // Colores Dinámicos (Temperatura)
     const tBar = document.getElementById('tempBar');
-    if(state.temp < 60) tBar.style.background = "#ffc107";
-    else if(state.temp < 80) tBar.style.background = "#fd7e14";
-    else tBar.style.background = "#dc3545";
+    if(state.temp < 60) tBar.style.background = "linear-gradient(90deg, #ffc107, #ffca2c)";
+    else if(state.temp < 80) tBar.style.background = "linear-gradient(90deg, #fd7e14, #ff922b)";
+    else tBar.style.background = "linear-gradient(90deg, #dc3545, #ff1744)";
 
-    // Estados y Alertas
+    // Estados del Motor
     const alertBox = document.getElementById('safetyAlert');
     const mStatus = document.getElementById('motorStatus');
     const mText = document.getElementById('motorStatusText');
@@ -148,15 +152,15 @@ function uiUpdateLoop() {
         }
     }
 
-    // Animación visual
+    // Animación del Ventilador
     if (state.rpm > 1) {
-        rotation += state.rpm * 0.1;
+        rotation += state.rpm * 0.15;
         document.getElementById('fanBlade').style.transform = `rotate(${rotation}deg)`;
     }
 }
 
 // ======================================================
-// LISTENERS
+// EVENT LISTENERS
 // ======================================================
 document.getElementById('demoBtn').addEventListener('click', () => {
     if(activeSimulation) activeSimulation.startDemo();
@@ -166,6 +170,8 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     if(activeSimulation) {
         activeSimulation.reset();
         document.getElementById('humSlider').value = 50;
+        // Forzar actualización inmediata para limpiar gráficos visuales
+        uiUpdateLoop(); 
     }
 });
 
