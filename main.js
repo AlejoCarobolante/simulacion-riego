@@ -203,9 +203,12 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const type = (activeSimulation instanceof IdealSimulation) ? 'IDEAL' : 'REAL';
-    const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-    a.download = `datos_${type}_${timestamp}.txt`;
+    if (activeSimulation instanceof IdealSimulation) {
+        a.download = 'datos_ideal.txt';
+    } else {
+        a.download = 'datos_real.txt';
+    }
+    
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -220,8 +223,7 @@ document.getElementById('exitDemoBtn').addEventListener('click', () => {
 });
 
 document.getElementById('protToggle').addEventListener('change', (e) => {
-    protectionEnabled = e.target.checked; // Esta variable debe ser global si se usa fuera
-    // O mejor, el updateLoop ya lee el toggle directamente del DOM cada vez
+    protectionEnabled = e.target.checked;
     if (!e.target.checked) document.getElementById('safetyAlert').style.display = 'none'; 
 });
 

@@ -1,10 +1,11 @@
+
 clearvars; close all; clc;
 
 a = 0.5;        % amortiguamiento RPM (1/s)
 b = 18.66;       % ganancia por volt (RPM/V)
-c = 0.02;       % generaci�n de calor por RPM (�C/(RPM�s))
-d = 0.05;       % disipaci�n t�rmica (1/s)
-T_amb = 20.0;   % temperatura ambiente (�C)
+c = 0.02;       % generaci n de calor por RPM ( C/(RPM s))
+d = 0.05;       % disipaci n t rmica (1/s)
+T_amb = 20.0;   % temperatura ambiente ( C)
 
 A = [-a, 0;
       c, -d];
@@ -16,7 +17,7 @@ disp("Matrices del modelo:");
 A, B
 
 %  lectura del txt
-usar_datos_reales = true/false;
+usar_datos_reales = true;
 archivo = 'datos_real.txt';
 
 if usar_datos_reales
@@ -119,29 +120,29 @@ for k=1:size(ICs,2)
     Traj5{k} = X5;
 end
 
-%  gr�fico plano de fase
-figure('Position',[50 100 1400 480]); % Hice la figura un poco m�s ancha
+%  gr fico plano de fase
+figure('Position',[50 100 1400 480]); % Hice la figura un poco m s ancha
 
 % u = 0V
-subplot(1,3,1); %esta es la posici�n del gr�fico en el subplot
+subplot(1,3,1); %esta es la posici n del gr fico en el subplot
 quiver(R,TT,U0,V0,'k'); hold on;
 for k=1:numel(Traj0)
     plot(Traj0{k}(:,1),Traj0{k}(:,2),'b','LineWidth',1.5);
 end
 plot(xeq0(1), xeq0(2), 'go','MarkerFaceColor','g','MarkerSize',8);
-title("Campo de Fase � u = 0 V");
-xlabel("RPM"); ylabel("Temperatura (�C)");
+title("Campo de Fase   u = 0 V");
+xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
 % u = 3V 
-subplot(1,3,2); % Posici�n 2 (al medio)
+subplot(1,3,2); % Posici n 2 (al medio)
 quiver(R,TT,U3,V3,'k'); hold on;
 for k=1:numel(Traj3)
     plot(Traj3{k}(:,1),Traj3{k}(:,2),'m','LineWidth',1.5); 
 end
 plot(xeq3(1), xeq3(2), 'mo','MarkerFaceColor','m','MarkerSize',8);
-title("Campo de Fase � u = 3 V");
-xlabel("RPM"); ylabel("Temperatura (�C)");
+title("Campo de Fase   u = 3 V");
+xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
 % u = 5V 
@@ -151,11 +152,11 @@ for k=1:numel(Traj5)
     plot(Traj5{k}(:,1),Traj5{k}(:,2),'r','LineWidth',1.5);
 end
 plot(xeq5(1), xeq5(2), 'ro','MarkerFaceColor','r','MarkerSize',8);
-title("Campo de Fase � u = 5 V");
-xlabel("RPM"); ylabel("Temperatura (�C)");
+title("Campo de Fase   u = 5 V");
+xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
-suptitle('Planos de Fase del Modelo en Espacio de Estados');
+subtitle('Planos de Fase del Modelo en Espacio de Estados');
 
 %  envio a thingspeak
 enviarThingSpeak = true; 
@@ -183,11 +184,12 @@ if enviarThingSpeak
             fprintf("OK [%d/%d]  RPM %.1f | Temp %.1f | u %.2fV | Hum %d%%\n", ...
                     k, length(humedad_real), rpm, temp, u, hum);
         catch
-            warning("Fallo en env�o.");
+            warning("Fallo en env o.");
         end
 
         pause(16); 
     end
 
-    fprintf("\n*** Env�o finalizado ***\n");
+    fprintf("\n*** Env o finalizado ***\n");
 end
+    

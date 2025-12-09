@@ -201,6 +201,7 @@
         <div style="display:flex; gap:10px;">
             <button class="btn-tool" onclick="copyToClipboard('codeIdeal')">📋 Copiar</button>
             <button class="btn-tool" onclick="downloadCode('codeIdeal', 'riego3_ideal.m')">⬇️ Descargar .m</button>
+            <a href="https://matlab.mathworks.com/" target="_blank" class="btn-tool" style="text-decoration:none;">🚀 Abrir MATLAB Online</a>
         </div>
     </div>
     <pre><code id="codeIdeal" class="language-matlab">
@@ -361,11 +362,11 @@ title("Campo de Fase   u = 5 V");
 xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
-suptitle('Planos de Fase del Modelo en Espacio de Estados');
+subtitle('Planos de Fase del Modelo en Espacio de Estados');
 
 %  envio a thingspeak
 enviarThingSpeak = true; 
-WRITE_API_KEY = 'OV9AFAEO7QJ1BVG6';
+WRITE_API_KEY = 'GOSQTZU6DXVI2YX9';
 
 if enviarThingSpeak
     if isempty(humedad_real)
@@ -411,9 +412,11 @@ end
         <div style="display:flex; gap:10px;">
             <button class="btn-tool" onclick="copyToClipboard('codeReal')">📋 Copiar</button>
             <button class="btn-tool" onclick="downloadCode('codeReal', 'riego3_real.m')">⬇️ Descargar .m</button>
+            <a href="https://matlab.mathworks.com/" target="_blank" class="btn-tool" style="text-decoration:none;">🚀 Abrir MATLAB Online</a>
         </div>
     </div>
     <pre><code id="codeReal" class="language-matlab">
+
 clearvars; close all; clc;
 
 a = 0.5;        % amortiguamiento RPM (1/s)
@@ -432,7 +435,7 @@ disp("Matrices del modelo:");
 A, B
 
 %  lectura del txt
-usar_datos_reales = true/false;
+usar_datos_reales = true;
 archivo = 'datos_real.txt';
 
 if usar_datos_reales
@@ -571,7 +574,7 @@ title("Campo de Fase   u = 5 V");
 xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
-suptitle('Planos de Fase del Modelo en Espacio de Estados');
+subtitle('Planos de Fase del Modelo en Espacio de Estados');
 
 %  envio a thingspeak
 enviarThingSpeak = true; 
@@ -607,6 +610,7 @@ if enviarThingSpeak
 
     fprintf("\n*** Env o finalizado ***\n");
 end
+    
     </code></pre>
 </div>
                 </div>
