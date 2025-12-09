@@ -156,8 +156,6 @@ title("Campo de Fase   u = 5 V");
 xlabel("RPM"); ylabel("Temperatura ( C)");
 grid on;
 
-subtitle('Planos de Fase del Modelo en Espacio de Estados');
-
 %  envio a thingspeak
 enviarThingSpeak = true; 
 WRITE_API_KEY = 'GOSQTZU6DXVI2YX9';
