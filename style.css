@@ -25,6 +25,8 @@ section#landing-page.active { display: block; }
 .btn-launch { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; }
 .btn-launch:hover { opacity: 0.9; }
 .btn-iot { background: #00b894; } .btn-matlab { background: #e17055; } .btn-python { background: #f9ca24; color: #333; } .btn-doc { background: #0984e3; }
+.btn-tinker { background: #FF9F43; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: auto; padding: 12px; }
+.btn-tinker:hover { opacity: 0.9; }
 footer { text-align: center; color: #888; padding: 30px; background: #eef2f5; margin-top: auto; width: 100%; }
 
 /* DASHBOARDS */
@@ -41,8 +43,17 @@ footer { text-align: center; color: #888; padding: 30px; background: #eef2f5; ma
 .panel-title { color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
 .col-left { background: #fff; }
 .button-group { display: flex; gap: 10px; margin-bottom: 20px; }
-.btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; }
-.btn-demo { background: #667eea; } .btn-reset { background: #ff7675; }
+.btn { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; color: white; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;}
+.btn-demo { background: #667eea; } 
+.btn-reset { background: #ff7675; }
+.btn-pause { background: #f1c40f; color: white; } /* Botón Pausa */
+.btn:hover { opacity: 0.9; transform: translateY(-2px); }
+.btn:disabled { background: #ccc; cursor: not-allowed; transform: none; opacity: 0.7; }
+
+/* Botón Log Discreto */
+.btn-icon { background: transparent; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 1.2rem; padding: 5px 10px; transition: all 0.2s; color: #555; }
+.btn-icon:hover { background: #eef2f5; color: #2c3e50; border-color: #bbb; transform: scale(1.1); }
+
 .control-group { background: #f8f9fa; padding: 25px; border-radius: 12px; border: 1px solid #eee; }
 .value-display { float: right; color: #667eea; font-weight: bold; }
 input[type=range] { width: 100%; cursor: pointer; margin: 15px 0; }
@@ -78,71 +89,25 @@ input:checked + .slider-toggle:before { transform: translateX(22px); }
 .alert-box { background: #fff5f5; color: #c0392b; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #e74c3c; display: none; margin-bottom: 20px; animation: pulse 1s infinite; font-weight: bold; }
 @keyframes pulse { 50% { opacity: 0.6; } }
 
-/* --- IOT SPLIT LAYOUT (NUEVO) --- */
-.iot-split-container { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 40px; 
-    margin-top: 20px;
-}
-
-.iot-column {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1px solid #e9ecef;
-}
-
-.iot-col-header { 
-    padding-bottom: 15px; 
-    border-bottom: 1px solid #ddd; 
-    margin-bottom: 20px; 
-    text-align: center; 
-}
+/* IOT HORIZONTAL */
+.iot-split-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 20px; }
+.iot-column { background: #f8f9fa; border-radius: 12px; padding: 20px; border: 1px solid #e9ecef; }
+.iot-col-header { padding-bottom: 15px; border-bottom: 1px solid #ddd; margin-bottom: 20px; text-align: center; }
 .iot-col-header h3 { color: #2c3e50; margin-bottom: 5px; }
 .status-badge { display: inline-block; background: #e2e6ea; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #666; }
+.status-badge.connected { background: #d4edda; color: #155724; }
+.status-badge.error { background: #f8d7da; color: #721c24; }
 
-/* Botones dentro de las columnas */
-.field-buttons-area { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 8px; 
-    justify-content: center; 
-    margin-bottom: 20px; 
-}
-.btn-field { 
-    background: white; border: 1px solid #667eea; color: #667eea; 
-    padding: 6px 12px; border-radius: 15px; cursor: pointer; 
-    font-size: 0.85rem; transition: 0.2s; 
-}
+.iot-controls { margin-bottom: 30px; text-align: center; }
+.field-buttons-area { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.btn-field { background: white; border: 1px solid #667eea; color: #667eea; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
 .btn-field:hover { background: #667eea; color: white; }
-
-/* Gráficos apilados */
 .charts-stack { display: flex; flex-direction: column; gap: 15px; }
-
-/* Tarjeta de Gráfico Horizontal */
-.chart-card { 
-    background: white; 
-    padding: 15px; 
-    border-radius: 10px; 
-    border: 1px solid #eee; 
-    display: grid; 
-    grid-template-columns: 1fr 1.5fr; 
-    gap: 20px; 
-    align-items: center; 
-    position: relative;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-}
+.chart-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #eee; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; align-items: center; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 .chart-info h4 { margin: 0 0 5px 0; color: #333; font-size: 1rem; }
 .chart-info p { color: #777; font-size: 0.85rem; margin: 0; line-height: 1.4; }
 .chart-wrapper { width: 100%; height: 150px; position: relative; }
-.removeChartBtn { 
-    position: absolute; top: 8px; right: 8px; 
-    background: #ff7675; color: white; border: none; 
-    width: 20px; height: 20px; border-radius: 50%; 
-    cursor: pointer; font-weight: bold; line-height: 20px; 
-    z-index: 5; font-size: 0.8rem;
-}
+.removeChartBtn { position: absolute; top: 8px; right: 8px; background: #ff7675; color: white; border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-weight: bold; line-height: 20px; z-index: 5; font-size: 0.8rem; }
 
 /* ANALISIS & CODE SCROLL */
 details.analysis-details { border: 1px solid #e9ecef; border-radius: 12px; overflow: hidden; background: #f8f9fa; margin-bottom: 40px; }
@@ -169,46 +134,40 @@ object { width: 100%; height: 100%; display: block; }
 .pdf-fallback { color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; }
 .btn-download { margin-top: 20px; display: inline-block; background: #667eea; color: white; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; transition: transform 0.2s; }
 
-/* --- ESTILOS TINKERCAD --- */
-
-/* Botón específico */
-.btn-tinker { 
-    background: #FF9F43; /* Color Naranja Tinkercad */
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    margin-top: auto; 
-    padding: 12px;
-}
-.btn-tinker:hover { opacity: 0.9; }
-
-/* Contenedor del Iframe */
-.tinkercad-wrapper {
-    flex: 1; /* Ocupa todo el espacio vertical restante */
-    width: 100%;
-    background: #f0f2f5;
-    border-radius: 12px;
-    overflow: hidden; /* Recorta las esquinas del iframe */
-    border: 1px solid #ddd;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-}
-
-/* Ajuste para que el iframe sea responsive */
-.tinkercad-wrapper iframe {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
+/* TINKERCAD */
+.tinkercad-wrapper { flex: 1; width: 100%; background: #f0f2f5; border-radius: 12px; overflow: hidden; border: 1px solid #ddd; box-shadow: inset 0 0 20px rgba(0,0,0,0.05); }
+.tinkercad-wrapper iframe { width: 100%; height: 100%; display: block; }
 
 /* EXTRAS */
 .overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; }
-.btn-exit { background: #667eea; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
+.btn-exit { background: #667eea; color: white; padding: 12px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; margin: 0; } /* Reset margin para grupo */
 .demo-status { background: #e3f2fd; color: #0984e3; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 25px; font-weight: bold; display: none; }
 
 @media (max-width: 900px) { 
     .dashboard-grid { grid-template-columns: 1fr; } 
     .iot-split-container { grid-template-columns: 1fr; }
     .chart-card { grid-template-columns: 1fr; }
+}
+/* Botones de herramientas de código */
+.btn-tool {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #e0e0e0;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.btn-tool:hover {
+    background: rgba(255,255,255,0.3);
+    color: #fff;
+    transform: translateY(-1px);
+    border-color: #fff;
+}
+
+.btn-tool:active {
+    transform: translateY(0);
 }
