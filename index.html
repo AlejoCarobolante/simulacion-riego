@@ -614,14 +614,14 @@ end
                 </div>
             </details>
                         <details class="analysis-details">
-                <summary>📜 Código Fuente: funcion_transferencia.m</summary>
+                <summary>📜 Código Fuente: funcion_transferencia_ideal.m</summary>
                 <div class="analysis-content">
 <div class="code-container">
     <div class="code-header" style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-weight:bold; color:#fff;">📄 funcion_transferencia.m </span>
+        <span style="font-weight:bold; color:#fff;">📄 funcion_transferencia_ideal.m </span>
         <div style="display:flex; gap:10px;">
             <button class="btn-tool" onclick="copyToClipboard('codeIdeal')">📋 Copiar</button>
-            <button class="btn-tool" onclick="downloadCode('codeIdeal', 'funcion_transferencia.m')">⬇️ Descargar .m</button>
+            <button class="btn-tool" onclick="downloadCode('codeIdeal', 'funcion_transferencia_ideal.m')">⬇️ Descargar .m</button>
             <a href="https://matlab.mathworks.com/" target="_blank" class="btn-tool" style="text-decoration:none;">🚀 Abrir MATLAB Online</a>
         </div>
     </div>
@@ -644,7 +644,37 @@ D = 0;
 </div>
                 </div>
             </details>
+                       <details class="analysis-details">
+                <summary>📜 Código Fuente: funcion_transferencia_real.m</summary>
+                <div class="analysis-content">
+<div class="code-container">
+    <div class="code-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-weight:bold; color:#fff;">📄 funcion_transferencia_real.m </span>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-tool" onclick="copyToClipboard('codeIdeal')">📋 Copiar</button>
+            <button class="btn-tool" onclick="downloadCode('codeIdeal', 'funcion_transferencia_real.m')">⬇️ Descargar .m</button>
+            <a href="https://matlab.mathworks.com/" target="_blank" class="btn-tool" style="text-decoration:none;">🚀 Abrir MATLAB Online</a>
+        </div>
+    </div>
+    <pre><code id="codeIdeal" class="language-matlab">
+clearvars; close all; clc;
 
+a = 0.5;   
+b = 18.66;     
+c = 0.02;     
+d = 0.05;     
+
+A = [-a, 0;
+      c, -d];
+B = [b; 0];
+C = [1 0];
+D = 0;
+
+[num, den] = ss2tf(A, B, C, D)
+    </code></pre>
+</div>
+                </div>
+            </details>
             <div class="analysis-full-width" style="margin-top: 40px;">
                 <div class="img-container large-view">
                     <h4>Respuesta Modelo Ideal</h4>
